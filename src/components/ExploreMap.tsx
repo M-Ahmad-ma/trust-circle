@@ -98,10 +98,15 @@ export function ExploreMap({ places, selectedId, onSelect }: ExploreMapProps) {
         </Text>
       </View>
 
-      {/* OSM attribution — required wherever its tiles appear */}
-      <Text className="absolute bottom-1.5 right-3 font-body text-[9px] text-ink-400">
-        {attributionNotice.text}
-      </Text>
+      {/* Attribution — required wherever these tiles appear, so it stays
+          legible rather than hidden behind the map's own control. */}
+      <View className="absolute bottom-1 right-2 items-end">
+        {attributionNotice.lines.map((line) => (
+          <Text key={line} className="font-body text-[8px] leading-3 text-ink-400">
+            {line}
+          </Text>
+        ))}
+      </View>
     </View>
   );
 }

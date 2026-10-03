@@ -1,43 +1,12 @@
-import type { StyleSpecification } from '@maplibre/maplibre-react-native';
+import { warmStyle } from './warmStyle';
 
 /**
- * OpenStreetMap raster tiles, pushed through MapLibre raster paint properties
- * so the basemap reads as a warm sand wash rather than a cold clinical map.
- * No API key, no Google, fully open source.
+ * Basemap: Liberty from OpenFreeMap, restyled to the app's warm sand palette in
+ * `./warmStyle`. Vector tiles, so it stays sharp at every zoom — the previous
+ * OpenStreetMap raster source blurred badly past ~z15 because a 256px tile
+ * spans ~600m at that scale.
  */
-export const mapStyle: StyleSpecification = {
-  version: 8,
-  name: 'Sand Wash',
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      maxzoom: 10,
-      attribution: '© OpenStreetMap contributors',
-    },
-  },
-  layers: [
-    {
-      id: 'paper',
-      type: 'background',
-      paint: { 'background-color': '#eadfc8' },
-    },
-    {
-      id: 'osm',
-      type: 'raster',
-      source: 'osm',
-      paint: {
-        'raster-saturation': -0.92,
-        'raster-contrast': -0.18,
-        'raster-brightness-min': 0.16,
-        'raster-brightness-max': 0.95,
-        'raster-hue-rotate': -12,
-        'raster-opacity': 0.92,
-      },
-    },
-  ],
-};
+export const mapStyle = warmStyle;
 
 /** Peshawar, framed on the Hayatabad / University Road cluster. */
 export const peshawarOverview = {
@@ -48,8 +17,8 @@ export const peshawarOverview = {
   pitch: 0,
 };
 
-/** Roughly 750 m across — close enough to read a venue and its neighbours. */
-export const PLACE_FOCUS_ZOOM = 16;
+/** Roughly 380 m across — close enough to read a venue and its neighbours. */
+export const PLACE_FOCUS_ZOOM = 17;
 
 /**
  * Nudges the focal point below the viewport centre so the focused pin clears the
@@ -64,7 +33,7 @@ export const PLACE_FOCUS_PADDING = {
 
 export const PLACE_FOCUS_DURATION = 850;
 
+/** Split across two lines — the single-line form overruns the map viewport. */
 export const attributionNotice = {
-  text: '© OpenStreetMap',
-  longText: '© OpenStreetMap contributors',
+  lines: ['© OpenFreeMap · © OpenMapTiles', '© OpenStreetMap contributors'],
 };

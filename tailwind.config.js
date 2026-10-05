@@ -136,6 +136,8 @@ module.exports = {
           sunken: '#efe7d6',
         },
         border: '#e0d2b4',
+        hairline: '#ecebe7',
+        chip: '#f0efec',
         ring: '#a03246',
         muted: {
           DEFAULT: '#efe7d6',

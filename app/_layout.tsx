@@ -19,7 +19,9 @@ import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export const unstable_settings = {
-  initialRouteName: '(tabs)',
+  // Unauthenticated entry point. `login` offers "Browse as guest" -> /(tabs),
+  // so the app stays reachable without an account.
+  initialRouteName: '(auth)',
 };
 
 export default function RootLayout() {
@@ -41,10 +43,19 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="dark" />
       <Stack>
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="place/[id]"
           options={{ headerShown: false, animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="profile/[id]"
+          options={{ headerShown: false, animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="write"
+          options={{ headerShown: false, animation: 'slide_from_bottom' }}
         />
       </Stack>
     </GestureHandlerRootView>

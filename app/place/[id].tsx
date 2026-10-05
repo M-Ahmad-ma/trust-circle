@@ -137,7 +137,7 @@ export default function PlaceDetailScreen() {
         savedLabel={placeCopy.saved}
         saved={saved}
         bottomInset={insets.bottom}
-        onWrite={() => {}}
+        onWrite={() => router.push(`/write?placeId=${place.id}`)}
         onToggleSave={() => setSaved((value) => !value)}
       />
     </View>

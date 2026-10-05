@@ -3,15 +3,11 @@ import { router } from 'expo-router';
 import { ProfileScreen } from '@/components/profile/ProfileScreen';
 import { places } from '@/data';
 
-/**
- * The Profile tab renders the profile inline rather than pushing a copy of it —
- * a push here would loop: back returns to this tab, which would push again.
- * The chevron therefore leaves for the map instead of popping.
- */
-export default function ProfileTab() {
+/** Viewing someone's profile as a pushed screen, e.g. from their Circle entry. */
+export default function ProfileRoute() {
   return (
     <ProfileScreen
-      onBack={() => router.navigate('/')}
+      onBack={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
       onOpenPlace={(placeId) => {
         if (places.some((place) => place.id === placeId)) router.push(`/place/${placeId}`);
       }}

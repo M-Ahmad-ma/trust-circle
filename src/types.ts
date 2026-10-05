@@ -12,6 +12,38 @@ export type Category = {
   count: number;
 };
 
+export type ProfileStats = {
+  reviews: number;
+  places: number;
+  photos: number;
+};
+
+export type Profile = {
+  id: string;
+  name: string;
+  handle: string;
+  city: string;
+  bio: string;
+  initials: string;
+  tint: string;
+  isSelf: boolean;
+  stats: ProfileStats;
+};
+
+export type ProfileReview = {
+  id: string;
+  placeId: string;
+  placeName: string;
+  neighbourhood: string;
+  time: string;
+  rating: number;
+  body: string;
+  photos: string[];
+  helpful: number;
+};
+
+export type ProfileTab = 'reviews' | 'places' | 'photos';
+
 /** Accent family an activity row is tinted with — matches the design's per-row colour. */
 export type ActivityTone = 'berry' | 'gold' | 'rose' | 'sand';
 

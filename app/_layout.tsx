@@ -42,6 +42,10 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="place/[id]"
+          options={{ headerShown: false, animation: 'slide_from_right' }}
+        />
       </Stack>
     </GestureHandlerRootView>
   );

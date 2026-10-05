@@ -28,20 +28,45 @@ module.exports = {
           DEFAULT: '#1c1815',
         },
 
-        // Oxblood — the single dominant accent.
+        // Oxblood/berry — the single dominant accent.
         primary: {
-          50: '#f8ebea',
-          100: '#f0d5d4',
-          200: '#e0a9aa',
-          300: '#cb7b80',
-          400: '#b2525c',
-          500: '#9b3543',
-          600: '#8e2c39',
-          700: '#6e1f2a',
-          800: '#521721',
-          900: '#3a1017',
+          50: '#faedee',
+          100: '#f4dcdf',
+          200: '#e9bcc3',
+          300: '#da93a0',
+          400: '#c4687a',
+          500: '#b04456',
+          600: '#a03246',
+          700: '#7e2534',
+          800: '#5e1b26',
+          900: '#3f1119',
           fg: '#fdfaf4',
-          DEFAULT: '#8e2c39',
+          DEFAULT: '#a03246',
+        },
+
+        // Blush — the social-proof surfaces ("People you know", "Your Circle").
+        rose: {
+          50: '#fdf4f4',
+          100: '#faeaeb',
+          200: '#f7e3e5',
+          300: '#f0d2d6',
+          400: '#e3b3bb',
+          500: '#cf8b97',
+          fg: '#7e2534',
+          DEFAULT: '#f7e3e5',
+        },
+
+        // Amber — ratings only. Kept out of `accent`, which stays brass for seals.
+        amber: {
+          100: '#fdf3e0',
+          200: '#fbe7c2',
+          300: '#f0c063',
+          400: '#e8ae48',
+          500: '#de9a34',
+          600: '#c07e22',
+          700: '#96601a',
+          fg: '#3f1119',
+          DEFAULT: '#de9a34',
         },
 
         // Old brass — ratings, seals, small glints.
@@ -80,11 +105,12 @@ module.exports = {
         },
 
         success: {
-          300: '#8fbf9f',
-          500: '#4a6b52',
-          600: '#3c5943',
+          100: '#e6f4ec',
+          300: '#7cc39a',
+          500: '#3e9b6b',
+          600: '#2f7d55',
           fg: '#fdfaf4',
-          DEFAULT: '#4a6b52',
+          DEFAULT: '#3e9b6b',
         },
         warning: {
           300: '#e0b25c',
@@ -110,7 +136,7 @@ module.exports = {
           sunken: '#efe7d6',
         },
         border: '#e0d2b4',
-        ring: '#8e2c39',
+        ring: '#a03246',
         muted: {
           DEFAULT: '#efe7d6',
           foreground: '#6b6058',

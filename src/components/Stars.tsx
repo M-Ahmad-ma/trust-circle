@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import Svg, { Polygon } from 'react-native-svg';
 
-const FILLED = '#8e2c39';
-const EMPTY = '#d9cbb2';
+const FILLED = '#de9a34';
+const EMPTY = '#e0d2b4';
 
 function Star({ size, color }: { size: number; color: string }) {
   const c = size / 2;
@@ -28,7 +28,7 @@ type StarsProps = {
   gap?: number;
 };
 
-/** Five stars with a fractional final star, matching the design's oxblood stars. */
+/** Five stars with a fractional final star — brass, the conventional rating colour. */
 export function Stars({ rating, size = 13, gap = 2 }: StarsProps) {
   return (
     <View className="flex-row items-center" style={{ gap }}>

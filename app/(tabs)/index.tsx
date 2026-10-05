@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
@@ -87,7 +88,7 @@ export default function ExploreScreen() {
             ...selected,
             visitedBy: peopleFor(selected.visitedBy),
           }}
-          onViewPlace={() => {}}
+          onViewPlace={() => router.push(`/place/${selected.id}`)}
         />
       )}
     </Screen>

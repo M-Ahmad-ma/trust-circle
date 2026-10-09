@@ -174,6 +174,9 @@ module.exports = {
         'body-medium': ['Sora_500Medium'],
         'body-semibold': ['Sora_600SemiBold'],
         'body-bold': ['Sora_700Bold'],
+        // Log output and identifiers. Platform monospace — monospaced digits are
+        // what make a latency column readable.
+        mono: ['ui-monospace', 'Menlo', 'monospace'],
       },
 
       borderRadius: {

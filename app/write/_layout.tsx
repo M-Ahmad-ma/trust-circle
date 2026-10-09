@@ -22,6 +22,7 @@ export default function WriteLayout() {
         <Stack.Screen name="story" />
         <Stack.Screen name="date" />
         <Stack.Screen name="visibility" />
+        <Stack.Screen name="new-place" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="preview" options={{ gestureEnabled: false }} />
       </Stack>
     </ExperienceDraftProvider>

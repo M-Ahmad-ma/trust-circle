@@ -1,13 +1,13 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { Monogram } from '@/components/Monogram';
-import type { Member } from '@/types';
+import { Avatar } from '@/components/Avatar';
+import type { AvatarUser } from '@/types';
 
 const AVATAR = 62;
 const RAIL_PADDING = 16;
 
 type PeopleRailProps = {
-  people: Member[];
+  people: AvatarUser[];
   total: number;
   inCircleLabel: string;
   seeAllLabel: string;
@@ -52,7 +52,7 @@ export function PeopleRail({
             accessibilityLabel={person.name}
             className="items-center active:opacity-70"
             style={{ width: AVATAR }}>
-            <Monogram initials={person.initials} tint={person.tint} size={AVATAR} />
+            <Avatar user={person} size={AVATAR} />
             <Text numberOfLines={1} className="mt-2 font-body text-[10px] text-ink-500">
               {person.name.split(' ')[0]}
             </Text>

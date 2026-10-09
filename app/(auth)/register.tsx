@@ -5,6 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+import { authApi } from '@/api';
+import { fieldErrors, hasCode } from '@/api/errors';
+
 import { AuthBackdrop, Rule } from '@/components/auth/AuthBackdrop';
 import { AuthButton, AuthLink, StepMarker } from '@/components/auth/AuthButton';
 import { AuthField } from '@/components/auth/AuthField';
@@ -24,6 +27,7 @@ export default function RegisterScreen() {
   const [accepted, setAccepted] = useState(false);
   const [touched, setTouched] = useState({ name: false, email: false, password: false });
   const [busy, setBusy] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const nameError = touched.name ? validateName(name) : null;
   const emailError = touched.email ? validateEmail(email) : null;
@@ -35,13 +39,30 @@ export default function RegisterScreen() {
     validatePassword(password) === null &&
     accepted;
 
-  const submit = () => {
+  const submit = async () => {
     setTouched({ name: true, email: true, password: true });
     if (!canSubmit) return;
 
     setBusy(true);
-    // No auth backend yet — hand off to the app so the flow is walkable.
-    router.replace('/(tabs)');
+    setServerError(null);
+
+    try {
+      await authApi.register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
+      router.replace('/(tabs)');
+    } catch (error) {
+      if (hasCode(error, 'EMAIL_TAKEN')) {
+        setServerError(authCopy.emailTaken);
+      } else {
+        const fields = fieldErrors(error);
+        setServerError(fields.email ?? fields.name ?? authCopy.registerFailed);
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -57,18 +78,8 @@ export default function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }}>
-          <View className="flex-row items-center justify-between px-6">
+          <View className="px-6">
             <StepMarker current={2} total={2} />
-            <Pressable
-              onPress={() => router.replace('/(tabs)')}
-              accessibilityRole="button"
-              accessibilityLabel={authCopy.browseAsGuest}
-              hitSlop={8}
-              className="active:opacity-60">
-              <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-                {authCopy.browseAsGuest}
-              </Text>
-            </Pressable>
           </View>
 
           <View className="px-6 pt-10">
@@ -128,6 +139,16 @@ export default function RegisterScreen() {
             <IdentityPicker name={name} tint={tint} onTintChange={setTint} />
           </View>
 
+          {serverError && (
+            <View className="mt-5">
+              <View className="rounded-card bg-rose-100 p-3.5">
+                <Text className="font-body text-[12px] leading-[18px] text-primary-700">
+                  {serverError}
+                </Text>
+              </View>
+            </View>
+          )}
+
           <View className="mt-8 px-6">
             <Pressable
               onPress={() => setAccepted((current) => !current)}
@@ -160,7 +181,9 @@ export default function RegisterScreen() {
 
           <View className="mt-7 flex-row items-center justify-center gap-1.5">
             <Text className="font-body text-[13px] text-ink-500">{authCopy.haveAccount}</Text>
-            <AuthLink onPress={() => router.replace('/login')}>{authCopy.signInInstead}</AuthLink>
+            <AuthLink onPress={() => router.replace('/(auth)/login')}>
+              {authCopy.signInInstead}
+            </AuthLink>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

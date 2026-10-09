@@ -1,18 +1,23 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
+import { placesApi } from '@/api';
 import { ProfileScreen } from '@/components/profile/ProfileScreen';
-import { places } from '@/data';
 
-/** Viewing someone's profile as a pushed screen, e.g. from their Circle entry. */
 export default function ProfileRoute() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+
   return (
     <ProfileScreen
+      userId={id}
       onBack={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
       onOpenPlace={(placeId) => {
-        if (places.some((place) => place.id === placeId)) router.push(`/place/${placeId}`);
+        // Confirm the place exists before pushing, so a stale id cannot land on
+        // an empty screen.
+        void placesApi.getPlace(placeId).then(
+          () => router.push(`/place/${placeId}`),
+          () => router.push('/')
+        );
       }}
-      onEditProfile={() => {}}
-      onOpenSettings={() => {}}
     />
   );
 }

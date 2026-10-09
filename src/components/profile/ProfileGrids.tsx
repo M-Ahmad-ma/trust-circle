@@ -1,16 +1,18 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image, Pressable, Text, View } from 'react-native';
 
+import { absoluteUrl } from '@/api/session';
+import type { WirePlace } from '@/api/types';
 import { Stars } from '@/components/Stars';
-import { photo } from '@/theme/photoMap';
-import type { Place } from '@/types';
-
-type ProfilePlacesProps = {
-  places: Place[];
-  onOpen: (placeId: string) => void;
-};
 
 const TILE = 168;
 
+type ProfilePlacesProps = {
+  places: WirePlace[];
+  onOpen: (placeId: string) => void;
+};
+
+/** Places derived from experiences actually returned by the API. */
 export function ProfilePlacesGrid({ places, onOpen }: ProfilePlacesProps) {
   return (
     <View className="flex-row flex-wrap px-6">
@@ -19,28 +21,28 @@ export function ProfilePlacesGrid({ places, onOpen }: ProfilePlacesProps) {
           key={place.id}
           onPress={() => onOpen(place.id)}
           accessibilityRole="button"
-          accessibilityLabel={`${place.name}, ${place.categoryLabel}`}
+          accessibilityLabel={place.name}
           className="mb-4 mr-4 overflow-hidden rounded-card border border-hairline bg-paper-50 active:opacity-80"
           style={{ width: TILE }}>
-          <Image
-            source={photo(place.photos[0])}
-            style={{ width: TILE, height: 104 }}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
+          <View className="h-[104px] items-center justify-center bg-surface">
+            <MaterialCommunityIcons name="map-marker-outline" size={22} color="#a03246" />
+          </View>
           <View className="p-3">
             <Text numberOfLines={1} className="font-body-semibold text-[12.5px] text-ink-900">
               {place.name}
             </Text>
-            <Text className="mt-0.5 font-body text-[10.5px] text-ink-400">
-              {place.neighbourhood}
+            <Text numberOfLines={1} className="mt-0.5 font-body text-[10.5px] text-ink-400">
+              {place.category ?? 'Place'}
+              {place.city ? ` · ${place.city}` : ''}
             </Text>
-            <View className="mt-2 flex-row items-center gap-1.5">
-              <Stars rating={place.rating} size={10} gap={1} />
-              <Text className="font-body-semibold text-[10.5px] text-ink-700">
-                {place.rating.toFixed(1)}
-              </Text>
-            </View>
+            {typeof place.avgRating === 'number' && (
+              <View className="mt-2 flex-row items-center gap-1.5">
+                <Stars rating={place.avgRating} size={10} gap={1} />
+                <Text className="font-body-semibold text-[10.5px] text-ink-700">
+                  {place.avgRating.toFixed(1)}
+                </Text>
+              </View>
+            )}
           </View>
         </Pressable>
       ))}
@@ -49,29 +51,30 @@ export function ProfilePlacesGrid({ places, onOpen }: ProfilePlacesProps) {
 }
 
 type ProfilePhotosProps = {
-  keys: string[];
+  /** Relative `/uploads/...` paths straight from the API. */
+  urls: string[];
 };
 
 const CELL = 104;
 
-export function ProfilePhotosGrid({ keys }: ProfilePhotosProps) {
+/** Photos come from the experiences on file — the API stores no photo gallery. */
+export function ProfilePhotosGrid({ urls }: ProfilePhotosProps) {
   return (
     <View className="flex-row flex-wrap px-6">
-      {keys.map((key, index) => (
-        <Image
-          key={`${key}-${index}`}
-          source={photo(key)}
-          style={{
-            width: CELL,
-            height: CELL,
-            marginRight: 4,
-            marginBottom: 4,
-            borderRadius: 8,
-          }}
-          resizeMode="cover"
-          accessibilityIgnoresInvertColors
-        />
-      ))}
+      {urls.map((url, index) => {
+        const uri = absoluteUrl(url);
+        if (!uri) return null;
+
+        return (
+          <Image
+            key={`${url}-${index}`}
+            source={{ uri }}
+            style={{ width: CELL, height: CELL, marginRight: 4, marginBottom: 4, borderRadius: 8 }}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+          />
+        );
+      })}
     </View>
   );
 }

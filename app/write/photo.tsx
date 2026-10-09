@@ -1,77 +1,100 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { validateUpload } from '@/api/endpoints/uploads';
 import { FlowHeader } from '@/components/write/FlowHeader';
+import {
+  MAX_PHOTOS,
+  STEP_ROUTES,
+  useExperienceDraft,
+  type DraftPhoto,
+} from '@/lib/experienceDraft';
 import { writeCopy } from '@/data';
-import { photo } from '@/theme/photoMap';
-import { STEP_ROUTES, useExperienceDraft } from '@/lib/experienceDraft';
-
-const TILE = 104;
-const MAX_PHOTOS = 6;
 
 /**
- * Fallback set for when the picker is unavailable or permission is declined, so
- * the step is never a dead end. README §5 makes photos optional precisely so a
- * blocked camera cannot block publishing.
+ * Photos are uploaded on publish, not here — so this step only collects local
+ * files. The previous sample-image strip is gone on purpose: those are bundled
+ * JPEGs with no upload id, so they could never be attached to an experience.
  */
-const SAMPLE_KEYS = [
-  'janis-cafe-review-1',
-  'charsli-tikka-review-1',
-  'beanstalk-coffee-hero-1',
-  'qissa-khwani-bazaar-hero-2',
-  'bala-bagh-fort-hero-3',
-  'cafe-qahwa-hero-2',
-];
-
 export default function PhotoStep() {
   const insets = useSafeAreaInsets();
   const { draft, dispatch } = useExperienceDraft();
-  const [pickerNote, setPickerNote] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const atLimit = draft.photos.length >= MAX_PHOTOS;
+  const room = MAX_PHOTOS - draft.photos.length;
+
+  const addAssets = (assets: ImagePicker.ImagePickerAsset[]) => {
+    const rejected: string[] = [];
+
+    for (const asset of assets) {
+      if (draft.photos.length >= MAX_PHOTOS) break;
+
+      const problem = validateUpload({
+        size: asset.fileSize,
+        type: asset.mimeType,
+      });
+      if (problem) {
+        rejected.push(problem);
+        continue;
+      }
+
+      dispatch({
+        type: 'addPhoto',
+        photo: {
+          localUri: asset.uri,
+          name: asset.fileName ?? `photo-${Date.now()}.jpg`,
+          type: asset.mimeType ?? 'image/jpeg',
+        },
+      });
+    }
+
+    if (rejected.length > 0) setNotice(rejected[0]);
+  };
 
   const openLibrary = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (!permission.granted) {
-      setPickerNote(writeCopy.pickerBlocked);
+      setNotice(writeCopy.pickerBlocked);
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
-      selectionLimit: MAX_PHOTOS - draft.photos.length,
+      selectionLimit: Math.max(1, room),
       quality: 0.8,
     });
 
-    if (result.canceled) return;
-
-    for (const asset of result.assets) {
-      if (draft.photos.length >= MAX_PHOTOS) break;
-      dispatch({ type: 'togglePhoto', source: { uri: asset.uri } });
+    if (!result.canceled) {
+      addAssets(result.assets);
+      setNotice(null);
     }
-    setPickerNote(null);
   };
 
   const openCamera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-
     if (!permission.granted) {
-      setPickerNote(writeCopy.cameraBlocked);
+      setNotice(writeCopy.cameraBlocked);
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-    if (result.canceled) return;
-
-    dispatch({ type: 'togglePhoto', source: { uri: result.assets[0].uri } });
-    setPickerNote(null);
+    if (!result.canceled) {
+      addAssets(result.assets);
+      setNotice(null);
+    }
   };
 
-  const atLimit = draft.photos.length >= MAX_PHOTOS;
+  const removeAll = () => {
+    for (let i = draft.photos.length - 1; i >= 0; i -= 1) {
+      dispatch({ type: 'removePhotoAt', index: i });
+    }
+  };
 
   return (
     <View className="flex-1 bg-paper-100">
@@ -106,9 +129,7 @@ export default function PhotoStep() {
                 {draft.photos.length} of {MAX_PHOTOS}
               </Text>
               <Pressable
-                onPress={() =>
-                  draft.photos.forEach((_, index) => dispatch({ type: 'removePhotoAt', index: 0 }))
-                }
+                onPress={removeAll}
                 accessibilityRole="button"
                 accessibilityLabel={writeCopy.removeAllPhotos}
                 hitSlop={8}
@@ -124,10 +145,10 @@ export default function PhotoStep() {
               showsHorizontalScrollIndicator={false}
               className="mt-3 grow-0"
               contentContainerStyle={{ gap: 8 }}>
-              {draft.photos.map((source, index) => (
-                <View key={`${index}`} className="overflow-hidden rounded-card">
+              {draft.photos.map((photo: DraftPhoto, index) => (
+                <View key={`${photo.localUri}-${index}`} className="overflow-hidden rounded-card">
                   <Image
-                    source={source}
+                    source={{ uri: photo.localUri }}
                     style={{ width: TILE, height: TILE }}
                     resizeMode="cover"
                     accessibilityIgnoresInvertColors
@@ -151,71 +172,47 @@ export default function PhotoStep() {
             </ScrollView>
 
             <Text className="mt-2.5 font-body text-[10.5px] text-ink-400">
-              {writeCopy.coverHint}
+              {writeCopy.uploadOnPublish}
             </Text>
           </View>
         )}
 
         <View className="mt-7 gap-2.5 px-5">
-          <Pressable
+          <ActionRow
+            icon="image-multiple-outline"
+            label={writeCopy.chooseFromLibrary}
+            disabled={atLimit}
             onPress={openLibrary}
+          />
+          <ActionRow
+            icon="camera-outline"
+            label={writeCopy.takePhoto}
             disabled={atLimit}
-            accessibilityRole="button"
-            accessibilityLabel={writeCopy.chooseFromLibrary}
-            className={`flex-row items-center gap-3 rounded-card border border-border bg-paper-50 px-4 py-3.5 ${
-              atLimit ? 'opacity-40' : 'active:opacity-70'
-            }`}>
-            <MaterialCommunityIcons name="image-multiple-outline" size={19} color="#a03246" />
-            <Text className="flex-1 font-body-semibold text-[13px] text-ink-900">
-              {writeCopy.chooseFromLibrary}
-            </Text>
-          </Pressable>
-
-          <Pressable
             onPress={openCamera}
-            disabled={atLimit}
-            accessibilityRole="button"
-            accessibilityLabel={writeCopy.takePhoto}
-            className={`flex-row items-center gap-3 rounded-card border border-border bg-paper-50 px-4 py-3.5 ${
-              atLimit ? 'opacity-40' : 'active:opacity-70'
-            }`}>
-            <MaterialCommunityIcons name="camera-outline" size={19} color="#a03246" />
-            <Text className="flex-1 font-body-semibold text-[13px] text-ink-900">
-              {writeCopy.takePhoto}
-            </Text>
-          </Pressable>
+          />
 
-          {pickerNote && (
+          {notice && (
             <View className="mt-1 rounded-card bg-accent-50 p-3">
               <Text className="font-body text-[11.5px] leading-[17px] text-accent-700">
-                {pickerNote}
+                {notice}
               </Text>
             </View>
           )}
 
-          {!atLimit && (
-            <>
-              <Text className="mt-4 font-body-semibold text-3xs uppercase text-ink-300">
-                {writeCopy.orUseSample}
+          {atLimit && (
+            <Text className="mt-1 font-body text-[11.5px] text-ink-400">
+              {writeCopy.photoLimitReached}
+            </Text>
+          )}
+
+          {/* README §5 — photos are optional, so a blocked camera is not a dead end. */}
+          {draft.photos.length === 0 && (
+            <View className="mt-3 flex-row gap-2.5 rounded-card bg-surface p-4">
+              <MaterialCommunityIcons name="information-outline" size={15} color="#6b6058" />
+              <Text className="flex-1 font-body text-[11px] leading-[17px] text-ink-500">
+                {writeCopy.photosOptionalNote}
               </Text>
-              <View className="mt-2.5 flex-row flex-wrap" style={{ gap: 8 }}>
-                {SAMPLE_KEYS.map((key) => (
-                  <Pressable
-                    key={key}
-                    onPress={() => dispatch({ type: 'togglePhoto', source: photo(key) })}
-                    accessibilityRole="button"
-                    accessibilityLabel={writeCopy.addSample}
-                    className="overflow-hidden rounded-[10px] active:opacity-60">
-                    <Image
-                      source={photo(key)}
-                      style={{ width: 64, height: 64, borderRadius: 10 }}
-                      resizeMode="cover"
-                      accessibilityIgnoresInvertColors
-                    />
-                  </Pressable>
-                ))}
-              </View>
-            </>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -234,5 +231,33 @@ export default function PhotoStep() {
         </Pressable>
       </View>
     </View>
+  );
+}
+
+const TILE = 104;
+
+function ActionRow({
+  icon,
+  label,
+  disabled,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  label: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      className={`flex-row items-center gap-3 rounded-card border border-border bg-paper-50 px-4 py-3.5 ${
+        disabled ? 'opacity-40' : 'active:opacity-70'
+      }`}>
+      <MaterialCommunityIcons name={icon} size={19} color="#a03246" />
+      <Text className="flex-1 font-body-semibold text-[13px] text-ink-900">{label}</Text>
+    </Pressable>
   );
 }

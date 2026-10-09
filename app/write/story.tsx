@@ -23,7 +23,7 @@ export default function StoryStep() {
   const { draft, dispatch } = useExperienceDraft();
   const [touched, setTouched] = useState(false);
 
-  const length = draft.review.trim().length;
+  const length = draft.reviewText.trim().length;
   const tooShort = length < MIN_LENGTH;
   const valid = !tooShort;
 
@@ -58,8 +58,8 @@ export default function StoryStep() {
 
           <View className="mt-7 px-5">
             <TextInput
-              value={draft.review}
-              onChangeText={(review) => dispatch({ type: 'setReview', review })}
+              value={draft.reviewText}
+              onChangeText={(reviewText) => dispatch({ type: 'setReviewText', reviewText })}
               onBlur={() => setTouched(true)}
               placeholder={writeCopy.storyPlaceholder}
               placeholderTextColor="#b8a37c"

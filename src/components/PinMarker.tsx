@@ -1,47 +1,58 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Pressable, Text, View } from 'react-native';
 
-import type { Place } from '@/types';
-import { Monogram } from './Monogram';
-
-const PALETTE = ['#8e2c39', '#4a6b52', '#c08a2e', '#6e5a86', '#a06c22', '#6e1f2a'];
+import { absoluteUrl } from '@/api/session';
+import type { WirePlace } from '@/api/types';
+import { tintForId } from '@/components/Avatar';
+import { Monogram } from '@/components/Monogram';
 
 function initialsFor(name: string) {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-}
-
-function tintFor(id: string) {
-  let hash = 0;
-  for (let i = 0; i < id.length; i += 1) hash = (hash + id.charCodeAt(i)) % PALETTE.length;
-  return PALETTE[hash];
+  return (
+    name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase() || '?'
+  );
 }
 
 type PinMarkerProps = {
-  place: Place;
+  place: WirePlace;
   selected: boolean;
   onPress: (id: string) => void;
 };
 
 /**
- * The pin is a ringed monogram disc centred on its coordinate; the selected pin
- * grows, gains a drop shadow, and grows a nameplate below it. The outer view is
- * pinned to the disc's exact footprint so the label never shifts the geography.
+ * The pin is a ringed disc centred on its coordinate; the selected pin grows,
+ * gains a drop shadow, and grows a nameplate below it. The outer view is pinned
+ * to the disc's exact footprint so the label never shifts the geography.
+ *
+ * The disc shows the place's `coverPhoto` when it has one, and the derived
+ * monogram otherwise. The monogram is not a placeholder here — it is the real
+ * state for a place with no visible photo, which is common: the server derives
+ * `coverPhoto` from the newest experience *this viewer* may see, so an
+ * experience-free place, or one whose only photos belong to others, arrives
+ * with `coverPhoto: null`.
  */
 export function PinMarker({ place, selected, onPress }: PinMarkerProps) {
   const disc = selected ? 52 : 40;
   const ringWidth = selected ? 3 : 2;
-  const ringColor = selected ? '#8e2c39' : '#e0d2b4';
+  const ringColor = selected ? '#a03246' : '#e0d2b4';
+
+  const uri = absoluteUrl(place.coverPhoto);
+  // A broken or unreachable cover must not leave a blank hole on the map, so a
+  // failed load falls back to the monogram permanently rather than per-render.
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = uri !== null && !imageFailed;
 
   return (
     <View style={{ width: disc, height: disc }}>
       <Pressable
         onPress={() => onPress(place.id)}
         hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={place.name}
         style={{
           width: disc,
           height: disc,
@@ -57,24 +68,27 @@ export function PinMarker({ place, selected, onPress }: PinMarkerProps) {
           shadowOffset: { width: 0, height: selected ? 4 : 2 },
           elevation: selected ? 6 : 2,
         }}>
-        <Monogram initials={initialsFor(place.name)} tint={tintFor(place.id)} size={disc - 10} />
+        {showImage ? (
+          <Image
+            source={{ uri }}
+            // The disc is bordered, so the image must fill the inner box to sit
+            // flush against the ring without covering it.
+            style={{ width: disc - ringWidth * 2, height: disc - ringWidth * 2 }}
+            borderRadius={(disc - ringWidth * 2) / 2}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <Monogram
+            initials={initialsFor(place.name)}
+            tint={tintForId(place.id)}
+            size={disc - 10}
+          />
+        )}
       </Pressable>
 
-      {place.seal && (
-        <View
-          className="absolute items-center justify-center rounded-pill bg-accent-500"
-          style={{
-            width: 16,
-            height: 16,
-            right: -3,
-            bottom: -3,
-            borderWidth: 2,
-            borderColor: '#fdfaf4',
-          }}>
-          <MaterialCommunityIcons name="check" size={9} color="#0e0c0a" />
-        </View>
-      )}
-
+      {/* Nameplate for the selected place. */}
       {selected && (
         <View className="absolute items-center" style={{ top: disc + 7, left: -60, width: 160 }}>
           <View className="rounded-pill bg-primary-600 px-3 py-1">

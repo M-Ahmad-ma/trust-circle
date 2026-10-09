@@ -1,10 +1,10 @@
 import { Text, View } from 'react-native';
 
-import type { Member } from '@/types';
-import { Monogram } from './Monogram';
+import type { AvatarUser } from '@/types';
+import { Avatar } from './Avatar';
 
 type MonogramStackProps = {
-  people: Member[];
+  people: AvatarUser[];
   size?: number;
   max?: number;
   ringColor?: string;
@@ -25,13 +25,7 @@ export function MonogramStack({
     <View className="flex-row items-center">
       {shown.map((person, index) => (
         <View key={person.id} style={{ marginLeft: index === 0 ? 0 : -overlap }}>
-          <Monogram
-            initials={person.initials}
-            tint={person.tint}
-            size={size}
-            ringColor={ringColor}
-            ringWidth={2}
-          />
+          <Avatar user={person} size={size} ringColor={ringColor} ringWidth={2} />
         </View>
       ))}
       {extra > 0 && (

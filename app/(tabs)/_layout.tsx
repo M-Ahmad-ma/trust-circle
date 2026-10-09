@@ -1,14 +1,20 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { View } from 'react-native';
 
+import { useSession } from '@/lib/useSession';
+
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-const ACTIVE = '#8e2c39';
+const ACTIVE = '#a03246';
 const INACTIVE = '#9a8e85';
 
-/** Active tab wears an oxblood dot above its glyph, as in the design. */
+/**
+ * Three tabs. Saved, Activity and a Notifications bell existed as designs but
+ * have no endpoint behind them, so they were removed rather than shipped as UI
+ * that could never load.
+ */
 function TabIcon({
   active,
   icon,
@@ -34,6 +40,14 @@ function TabIcon({
 }
 
 export default function TabLayout() {
+  const { isAuthenticated } = useSession();
+
+  // Every module the tabs read — /api/users, /api/places, /api/friends — sits
+  // behind requireAuth on the server. Entering without a token meant a wall of
+  // 401s and a client that cleared the stored session, so the gate is here
+  // rather than discovered one failed query at a time.
+  if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
+
   return (
     <Tabs
       screenOptions={{
@@ -69,26 +83,6 @@ export default function TabLayout() {
           title: 'Circle',
           tabBarIcon: ({ focused }) => (
             <TabIcon active="account-group" icon="account-group-outline" focused={focused} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="saved"
-        options={{
-          title: 'Saved',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon active="bookmark" icon="bookmark-outline" focused={focused} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="activity"
-        options={{
-          title: 'Activity',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon active="lightning-bolt" icon="lightning-bolt-outline" focused={focused} />
           ),
         }}
       />

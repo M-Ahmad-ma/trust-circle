@@ -1,16 +1,84 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
-import { Monogram } from '@/components/Monogram';
-import type { Profile, ProfileStats } from '@/types';
+import { Avatar } from '@/components/Avatar';
+import { RelationshipBadge } from '@/components/write/Relationship';
+import type { Relationship } from '@/api/types';
 
 const AVATAR = 112;
 
 type ProfileHeaderProps = {
-  profile: Profile;
+  name: string;
+  bio: string | null;
+  avatarPath: string | null;
+  relationship: Relationship | undefined;
+  isSelf: boolean;
+  stats: { experiences: number; friends: number };
   editLabel: string;
   onEdit: () => void;
 };
+
+/**
+ * Counts come from the API's viewer-aware `counts`. It exposes only experiences
+ * and friends — there is no server-side photo or "places visited" count, so
+ * those are not invented here.
+ */
+export function ProfileHeader({
+  name,
+  bio,
+  avatarPath,
+  relationship,
+  isSelf,
+  stats,
+  editLabel,
+  onEdit,
+}: ProfileHeaderProps) {
+  return (
+    <View className="bg-paper-50">
+      <View className="items-center px-7 pt-5">
+        <Avatar
+          user={{ id: name, name, coverPhoto: avatarPath }}
+          size={AVATAR}
+          ringColor="#fdfaf4"
+          ringWidth={3}
+        />
+
+        <Text className="mt-4 font-display text-[26px] leading-8 text-ink-900">{name}</Text>
+
+        {relationship && (
+          <View className="mt-2.5">
+            <RelationshipBadge relationship={relationship.type} label={relationship.label} />
+          </View>
+        )}
+
+        {bio ? (
+          <Text className="mt-4 text-center font-body text-[13.5px] leading-[23px] text-ink-500">
+            {bio}
+          </Text>
+        ) : null}
+      </View>
+
+      <View className="mt-6 h-px bg-hairline" />
+
+      <View className="flex-row px-7 py-5">
+        <Stat label="Experiences" value={stats.experiences} showDivider={false} />
+        <Stat label="Circle" value={stats.friends} showDivider />
+      </View>
+
+      {isSelf && (
+        <View className="px-7 pb-5">
+          <Pressable
+            onPress={onEdit}
+            accessibilityRole="button"
+            accessibilityLabel={editLabel}
+            className="h-11 items-center justify-center rounded-[12px] border border-primary-600 active:bg-rose-100">
+            <Text className="font-body-semibold text-[14px] text-primary-600">{editLabel}</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+}
 
 function Stat({
   label,
@@ -32,55 +100,12 @@ function Stat({
   );
 }
 
-export function ProfileHeader({ profile, editLabel, onEdit }: ProfileHeaderProps) {
-  const stats: [keyof ProfileStats, string][] = [
-    ['reviews', 'Reviews'],
-    ['places', 'Places'],
-    ['photos', 'Photos'],
-  ];
-
+/** Kept for screens that still need an icon-only affordance. */
+export function ProfilePlaceholder({ label }: { label: string }) {
   return (
-    <View className="bg-paper-50">
-      <View className="items-center px-7 pt-5">
-        <Monogram
-          initials={profile.initials}
-          tint={profile.tint}
-          size={AVATAR}
-          ringColor="#fdfaf4"
-          ringWidth={3}
-        />
-
-        <Text className="mt-4 font-display text-[26px] leading-8 text-ink-900">{profile.name}</Text>
-
-        <View className="mt-2 flex-row items-center">
-          <MaterialCommunityIcons name="map-marker" size={13} color="#a03246" />
-          <Text className="ml-1 font-body text-[13px] text-ink-400">{profile.city}</Text>
-        </View>
-
-        <Text className="mt-4 text-center font-body text-[13.5px] leading-[23px] text-ink-500">
-          {profile.bio}
-        </Text>
-      </View>
-
-      <View className="mt-6 h-px bg-hairline" />
-
-      <View className="flex-row px-7 py-5">
-        {stats.map(([key, label], index) => (
-          <Stat key={key} label={label} value={profile.stats[key]} showDivider={index > 0} />
-        ))}
-      </View>
-
-      {profile.isSelf && (
-        <View className="px-7 pb-5">
-          <Pressable
-            onPress={onEdit}
-            accessibilityRole="button"
-            className="h-11 items-center justify-center rounded-[12px] border border-primary-600 active:bg-rose-100"
-            style={{ backgroundColor: 'transparent' }}>
-            <Text className="font-body-semibold text-[14px] text-primary-600">{editLabel}</Text>
-          </Pressable>
-        </View>
-      )}
+    <View className="items-center py-6">
+      <MaterialCommunityIcons name="account-outline" size={18} color="#b8a37c" />
+      <Text className="mt-2 font-body text-[11.5px] text-ink-400">{label}</Text>
     </View>
   );
 }

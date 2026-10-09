@@ -1,145 +1,139 @@
-import { StatusBar } from 'expo-status-bar';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ScrollView, Share, Text, View, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useCallback, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CircleVisitedCard } from '@/components/place/CircleVisitedCard';
-import { ExperienceCarousel } from '@/components/place/ExperienceCarousel';
-import { ExperienceSignalsSection } from '@/components/place/ExperienceSignalsSection';
-import { HeroCarousel } from '@/components/place/HeroCarousel';
-import { actionBarHeight, PlaceActionBar } from '@/components/place/PlaceActionBar';
+import { placesApi, experiencesApi } from '@/api';
+import type { ExperienceCard, WirePlace } from '@/api/types';
+import { EmptyState, ErrorState, LoadingState } from '@/components/EmptyState';
 import { PlaceHeading } from '@/components/place/PlaceHeading';
-import { members, placeCopy, places, signalLabels, viewer } from '@/data';
-import { photo } from '@/theme/photoMap';
-import type { Member } from '@/types';
+import { ACTION_BAR_CONTENT_HEIGHT, PlaceActionBar } from '@/components/place/PlaceActionBar';
+import { ExperienceRow } from '@/components/place/ExperienceRow';
+import { PlaceHero, hasHero } from '@/components/place/PlaceHero';
+import { placeCopyApi } from '@/data';
+import { useApiQuery } from '@/lib/useApiQuery';
 
 export default function PlaceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [saved, setSaved] = useState(false);
 
-  const place = useMemo(() => places.find((candidate) => candidate.id === id), [id]);
+  const fetchPlace = useCallback(() => placesApi.getPlace(id), [id]);
+  const place = useApiQuery<WirePlace>(fetchPlace, {
+    key: `place:${id}`,
+    errorMessage: placeCopyApi.failed,
+    isEmpty: () => false,
+  });
 
-  const circle = useMemo(() => {
-    if (!place) return [] as Member[];
-    const byId = new Map(members.map((member) => [member.id, member]));
-    return place.visitedBy
-      .map((memberId) => byId.get(memberId))
-      .filter((member): member is Member => member !== undefined);
-  }, [place]);
+  const experiences = useApiQuery<ExperienceCard[]>(
+    () => experiencesApi.listPlaceExperiences(id, { limit: 30 }),
+    { key: `place-experiences:${id}` }
+  );
 
-  const authors = useMemo(() => {
-    const map: Record<string, Member> = {};
-    for (const member of members) map[member.id] = member;
-    return map;
-  }, []);
-
-  const photos = useMemo(() => {
-    const map: Record<string, ReturnType<typeof photo>> = {};
-    for (const candidate of places) {
-      for (const key of candidate.experiences.map((experience) => experience.photo)) {
-        map[key] = photo(key);
-      }
-    }
-    return map;
-  }, []);
-
-  if (!place) {
+  if (place.status === 'error' && !place.data) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-paper-100 px-8">
+      <View className="flex-1 items-center justify-center bg-paper-100">
         <StatusBar style="dark" />
-        <Text className="text-center font-display text-[20px] text-ink-800">
-          We could not find that place.
-        </Text>
-        <Text className="text-center font-body text-[12px] text-ink-400">
-          It may have been removed, or the link is out of date.
-        </Text>
+        <ErrorState label={place.message} onRetry={place.refetch} />
+        <Pressable
+          onPress={() => router.navigate('/')}
+          accessibilityRole="button"
+          className="active:opacity-60">
+          <Text className="font-body-semibold text-[13px] text-primary-600">Back to the map</Text>
+        </Pressable>
       </View>
     );
   }
 
-  const heroHeight = Math.round(Math.min(300, width * 0.82));
+  const data = place.data;
 
   return (
     <View className="flex-1 bg-paper-100">
-      <StatusBar style="light" />
+      <StatusBar style={hasHero(data?.coverPhoto) ? 'light' : 'dark'} />
 
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: actionBarHeight(insets.bottom) }}>
-        <HeroCarousel
-          photos={place.photos.map((key) => photo(key))}
-          height={heroHeight}
-          topInset={insets.top}
-          saved={saved}
-          onToggleSave={() => setSaved((value) => !value)}
-          onShare={() =>
-            Share.share({
-              title: place.name,
-              message: `${place.name} — ${place.categoryLabel} in ${viewer.city}\n${place.address}`,
-            })
-          }
-          onBack={() => router.back()}
-        />
-
-        <PlaceHeading
-          name={place.name}
-          categoryLabel={place.categoryLabel}
-          city={viewer.city}
-          openNow={place.openNow}
-          closesAt={place.closesAt}
-          rating={place.rating}
-          reviews={place.reviews}
-          address={place.address}
-        />
-
-        {circle.length > 0 && (
-          <CircleVisitedCard
-            people={circle}
-            eyebrow={placeCopy.peopleYouKnow}
-            visitedRecently={placeCopy.visitedRecently}
-            ctaLabel={placeCopy.seeTheirReviews}
-            onPress={() => {}}
-          />
+        contentContainerStyle={{ paddingBottom: ACTION_BAR_CONTENT_HEIGHT }}>
+        {!data && place.status === 'loading' && (
+          <View className="flex-1">
+            <LoadingState label={placeCopyApi.loading} />
+          </View>
         )}
 
-        {place.experiences.length > 0 && (
+        {data && (
           <>
-            <ExperienceCarousel
-              experiences={place.experiences}
-              authors={authors}
-              photos={photos}
-              title={placeCopy.experiences}
-              seeAllLabel={placeCopy.seeAll}
-              circleLabel={placeCopy.yourCircle}
-              onSeeAll={() => {}}
-              onOpenExperience={() => {}}
+            <PlaceHero coverPhoto={data.coverPhoto} />
+
+            <PlaceHeading
+              name={data.name}
+              categoryLabel={data.category ?? 'Place'}
+              city={data.city ?? ''}
+              address={data.address ?? data.city ?? ''}
+              rating={data.avgRating}
+              experienceCount={data.experienceCount ?? 0}
+              experienceCountLabel={placeCopyApi.experienceCount}
+              ratingLabel={placeCopyApi.avgRating}
+              openNow={null}
             />
 
-            <ExperienceSignalsSection
-              experiences={place.experiences}
-              labels={signalLabels}
-              note={placeCopy.signalsNote}
-              title={placeCopy.experienceDetails}
-            />
+            {typeof data.distanceM === 'number' && (
+              <Text className="px-4 pt-2 font-body text-[11.5px] text-ink-400">
+                {(data.distanceM / 1000).toFixed(1)} km away
+              </Text>
+            )}
+
+            <View className="mt-7 px-4">
+              <View className="flex-row items-baseline justify-between">
+                <Text className="font-display-semibold text-[18px] text-ink-900">Experiences</Text>
+                <Text className="font-body text-[12px] text-ink-400">
+                  {experiences.data?.length ?? 0} shown
+                </Text>
+              </View>
+            </View>
+
+            {experiences.status === 'loading' && <LoadingState label={placeCopyApi.loading} />}
+
+            {experiences.status === 'empty' && (
+              <EmptyState
+                icon="notebook-outline"
+                tone="sand"
+                title={placeCopyApi.noExperiencesTitle}
+                body={placeCopyApi.noExperiencesBody}
+                actionLabel={placeCopyApi.writeFirst}
+                onAction={() => router.push(`/write?placeId=${data.id}`)}
+              />
+            )}
+
+            {experiences.status === 'error' && experiences.data === null && (
+              <ErrorState label={experiences.message} onRetry={experiences.refetch} />
+            )}
+
+            <View className="mt-3 gap-3 px-4 pb-6">
+              {(experiences.data ?? []).map((experience) => (
+                <ExperienceRow
+                  key={experience.id}
+                  experience={experience}
+                  onOpen={() => router.push(`/experience/${experience.id}`)}
+                />
+              ))}
+            </View>
           </>
         )}
-
-        <View className="h-6" />
       </ScrollView>
 
-      <PlaceActionBar
-        writeLabel={placeCopy.writeYourExperience}
-        saveLabel={placeCopy.savePlace}
-        savedLabel={placeCopy.saved}
-        saved={saved}
-        bottomInset={insets.bottom}
-        onWrite={() => router.push(`/write?placeId=${place.id}`)}
-        onToggleSave={() => setSaved((value) => !value)}
-      />
+      {data && (
+        <PlaceActionBar
+          writeLabel={placeCopyApi.writeFirst}
+          saveLabel="Save Place"
+          savedLabel="Saved"
+          saved={saved}
+          bottomInset={insets.bottom}
+          onWrite={() => router.push(`/write?placeId=${data.id}`)}
+          onToggleSave={() => setSaved((value) => !value)}
+        />
+      )}
     </View>
   );
 }

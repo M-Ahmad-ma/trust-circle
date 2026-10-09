@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlowHeader } from '@/components/write/FlowHeader';
 import { writeCopy } from '@/data';
 import { STEP_ROUTES, useExperienceDraft } from '@/lib/experienceDraft';
-import { VISIBILITY_ORDER, relationshipFor } from '@/theme/relationship';
+import { VISIBILITY_OPTIONS } from '@/theme/relationship';
 
 export default function VisibilityStep() {
   const insets = useSafeAreaInsets();
@@ -39,8 +39,9 @@ export default function VisibilityStep() {
         </View>
 
         <View className="mt-7 gap-2.5 px-5">
-          {VISIBILITY_ORDER.map((id) => {
-            const level = relationshipFor(id);
+          {VISIBILITY_OPTIONS.map((option) => {
+            const level = option;
+            const id = option.id;
             const active = draft.visibility === id;
 
             return (

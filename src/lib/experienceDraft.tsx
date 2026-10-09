@@ -1,24 +1,37 @@
 import { createContext, useContext, useMemo, useReducer, type ReactNode } from 'react';
-import type { ImageSourcePropType } from 'react-native';
 
-import type { Visibility } from '@/theme/relationship';
+import type { Visibility } from '@/api/types';
 
-/** README §14 — the Experience data model, minus server-owned fields. */
+/**
+ * A photo the user picked but that may not exist on the server yet. `uploadId`
+ * is filled in as uploads succeed, so a failed publish can retry without
+ * re-uploading — orphaned uploads stay owned by the user and are reusable
+ * (API.md §4).
+ */
+export type DraftPhoto = {
+  localUri: string;
+  uploadId?: string;
+  name: string;
+  type: string;
+};
+
+/** README §14 Experience model, minus the server-owned id/createdAt/updatedAt. */
 export type ExperienceDraft = {
-  id: string;
   placeId: string | null;
+  /** Must serialise as a JSON number, not "5". */
   rating: number | null;
-  review: string;
+  /** API write name is `reviewText`; the response calls it `review`. */
+  reviewText: string;
+  /** 'YYYY-MM-DD'. The server rejects future dates with VISITED_AT_FUTURE. */
   visitedAt: string | null;
   visibility: Visibility | null;
-  photos: ImageSourcePropType[];
+  photos: DraftPhoto[];
 };
 
 export const emptyDraft: ExperienceDraft = {
-  id: 'draft',
   placeId: null,
   rating: null,
-  review: '',
+  reviewText: '',
   visitedAt: null,
   visibility: null,
   photos: [],
@@ -47,13 +60,15 @@ export const STEP_ROUTES: Record<StepId, string> = {
   preview: '/write/preview',
 };
 
+export const MAX_PHOTOS = 10;
+
 type Action =
   | { type: 'setPlace'; placeId: string }
-  | { type: 'togglePhoto'; source: ImageSourcePropType }
+  | { type: 'addPhoto'; photo: DraftPhoto }
   | { type: 'removePhotoAt'; index: number }
-  | { type: 'movePhoto'; from: number; to: number }
+  | { type: 'markUploaded'; index: number; uploadId: string }
   | { type: 'setRating'; rating: number }
-  | { type: 'setReview'; review: string }
+  | { type: 'setReviewText'; reviewText: string }
   | { type: 'setVisitedAt'; visitedAt: string }
   | { type: 'setVisibility'; visibility: Visibility }
   | { type: 'reset' };
@@ -62,35 +77,28 @@ function reducer(state: ExperienceDraft, action: Action): ExperienceDraft {
   switch (action.type) {
     case 'setPlace':
       return { ...state, placeId: action.placeId };
-    case 'togglePhoto': {
-      // Re-adding an already selected photo moves it to the end rather than
-      // duplicating, so tapping twice cannot produce an identical pair.
-      const exists = state.photos.indexOf(action.source);
-      if (exists >= 0) {
-        const photos = state.photos.filter((_, i) => i !== exists);
-        return { ...state, photos };
-      }
-      return { ...state, photos: [...state.photos, action.source] };
-    }
+    case 'addPhoto':
+      if (state.photos.length >= MAX_PHOTOS) return state;
+      return { ...state, photos: [...state.photos, action.photo] };
     case 'removePhotoAt':
       return { ...state, photos: state.photos.filter((_, i) => i !== action.index) };
-    case 'movePhoto': {
-      if (action.to < 0 || action.to >= state.photos.length) return state;
-      const photos = [...state.photos];
-      const [moved] = photos.splice(action.from, 1);
-      photos.splice(action.to, 0, moved);
-      return { ...state, photos };
-    }
+    case 'markUploaded':
+      return {
+        ...state,
+        photos: state.photos.map((photo, i) =>
+          i === action.index ? { ...photo, uploadId: action.uploadId } : photo
+        ),
+      };
     case 'setRating':
       return { ...state, rating: action.rating };
-    case 'setReview':
-      return { ...state, review: action.review };
+    case 'setReviewText':
+      return { ...state, reviewText: action.reviewText };
     case 'setVisitedAt':
       return { ...state, visitedAt: action.visitedAt };
     case 'setVisibility':
       return { ...state, visibility: action.visibility };
     case 'reset':
-      return { ...emptyDraft, id: `draft_${Date.now()}` };
+      return { ...emptyDraft };
     default:
       return state;
   }
@@ -109,7 +117,8 @@ export function stepStatus(draft: ExperienceDraft, step: StepId): StepStatus {
     case 'rating':
       return { complete: draft.rating !== null && draft.rating > 0, label: 'Rating' };
     case 'story':
-      return { complete: draft.review.trim().length >= 10, label: 'Experience' };
+      // Server only requires 1 char; the client holds a slightly higher bar.
+      return { complete: draft.reviewText.trim().length >= 10, label: 'Experience' };
     case 'date':
       return { complete: draft.visitedAt !== null, label: 'Visited' };
     case 'visibility':
@@ -139,11 +148,7 @@ export function ExperienceDraftProvider({ children }: { children: ReactNode }) {
   const [draft, dispatch] = useReducer(reducer, emptyDraft);
 
   const value = useMemo<DraftContextValue>(
-    () => ({
-      draft,
-      dispatch,
-      reset: () => dispatch({ type: 'reset' }),
-    }),
+    () => ({ draft, dispatch, reset: () => dispatch({ type: 'reset' }) }),
     [draft]
   );
 

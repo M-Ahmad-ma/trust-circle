@@ -25,8 +25,8 @@ export function validateEmail(value: string): string | null {
 export function validatePassword(value: string): string | null {
   if (value.length === 0) return 'Choose a password.';
   if (value.length < MIN_PASSWORD) return `At least ${MIN_PASSWORD} characters.`;
-  if (WEAK_FRAGMENTS.some((fragment) => value.toLowerCase().includes(fragment)))
-    return 'That is one of the first things anyone would guess.';
+  // if (WEAK_FRAGMENTS.some((fragment) => value.toLowerCase().includes(fragment)))
+  //   return 'That is one of the first things anyone would guess.';
   return null;
 }
 

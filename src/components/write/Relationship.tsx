@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import Svg, { Polygon } from 'react-native-svg';
 
 import { Stars } from '@/components/Stars';
-import { relationshipFor, type Visibility } from '@/theme/relationship';
+import { relationshipStyle, type RelationshipType } from '@/theme/relationship';
 
 const FILLED = '#de9a34';
 const EMPTY = '#e0d2b4';
@@ -55,34 +55,47 @@ export function StarRatingInput({ value, onChange, size = 44 }: StarRatingInputP
 }
 
 type RelationshipBadgeProps = {
-  visibility: Visibility;
+  /**
+   * The viewer's relationship to the author, computed server-side. This is NOT
+   * the author's visibility choice — the same experience shows different badges
+   * to different viewers.
+   */
+  relationship: RelationshipType;
+  /** Server-supplied label. Rendered verbatim when present. */
+  label?: string;
   compact?: boolean;
   size?: 'sm' | 'md';
 };
 
 /**
- * README §7 — proximity, not quality. The label always accompanies the colour so
- * the meaning never rests on hue alone.
+ * README §7 — proximity, not quality. The label always accompanies the colour
+ * so the meaning never rests on hue alone.
  */
-export function RelationshipBadge({ visibility, compact, size = 'md' }: RelationshipBadgeProps) {
-  const level = relationshipFor(visibility);
+export function RelationshipBadge({
+  relationship,
+  label,
+  compact,
+  size = 'md',
+}: RelationshipBadgeProps) {
+  const style = relationshipStyle(relationship);
+  const text = label ?? style.fallbackLabel;
 
   return (
     <View
       className="flex-row items-center gap-1.5 self-start rounded-pill px-2.5 py-1"
-      style={{ backgroundColor: level.wash }}>
+      style={{ backgroundColor: style.wash }}>
       <View
         style={{
           width: size === 'sm' ? 5 : 6,
           height: size === 'sm' ? 5 : 6,
           borderRadius: 3,
-          backgroundColor: level.color,
+          backgroundColor: style.color,
         }}
       />
       <Text
         className="font-body-semibold"
-        style={{ fontSize: size === 'sm' ? 9 : 10.5, color: level.color }}>
-        {compact ? level.short : level.label}
+        style={{ fontSize: size === 'sm' ? 9 : 10.5, color: style.color }}>
+        {compact ? style.fallbackLabel.split(' ')[0] : text}
       </Text>
     </View>
   );

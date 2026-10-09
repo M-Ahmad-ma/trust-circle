@@ -5,7 +5,7 @@ type SearchFieldProps = {
   value: string;
   placeholder: string;
   onChange: (value: string) => void;
-  onOpenFilters: () => void;
+  onOpenFilters?: () => void;
 };
 
 export function SearchField({ value, placeholder, onChange, onOpenFilters }: SearchFieldProps) {

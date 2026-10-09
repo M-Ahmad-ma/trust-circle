@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+
+import { authApi } from '@/api';
+import { fieldErrors, hasCode } from '@/api/errors';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthBackdrop } from '@/components/auth/AuthBackdrop';
@@ -17,19 +20,37 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [touched, setTouched] = useState({ email: false, password: false });
   const [busy, setBusy] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const emailError = touched.email ? validateEmail(email) : null;
   const passwordError = touched.password ? validatePassword(password) : null;
   const canSubmit = validateEmail(email) === null && validatePassword(password) === null;
 
-  const submit = () => {
+  const submit = async () => {
     setTouched({ email: true, password: true });
     if (!canSubmit) return;
 
     setBusy(true);
-    // No auth backend yet — hand off to the app so the flow is walkable.
-    router.replace('/(tabs)');
+    setServerError(null);
+
+    try {
+      await authApi.login(email.trim(), password);
+      router.replace('/(tabs)');
+    } catch (error) {
+      if (hasCode(error, 'INVALID_CREDENTIALS')) {
+        // Same message for unknown email and wrong password, by design — do not
+        // leak which one it was.
+        setServerError(authCopy.invalidCredentials);
+      } else {
+        const fields = fieldErrors(error);
+        setServerError(fields.email ?? fields.password ?? authCopy.loginFailed);
+      }
+    } finally {
+      setBusy(false);
+    }
   };
+
+  console.log(serverError);
 
   return (
     <View className="flex-1 bg-paper-100">
@@ -44,18 +65,8 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }}>
-          <View className="flex-row items-center justify-between px-6">
+          <View className="px-6">
             <StepMarker current={1} total={2} />
-            <Pressable
-              onPress={() => router.replace('/(tabs)')}
-              accessibilityRole="button"
-              accessibilityLabel={authCopy.browseAsGuest}
-              hitSlop={8}
-              className="active:opacity-60">
-              <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-                {authCopy.browseAsGuest}
-              </Text>
-            </Pressable>
           </View>
 
           <View className="px-6 pt-10">
@@ -97,10 +108,20 @@ export default function LoginScreen() {
               />
 
               <View className="mt-2 self-end">
-                <AuthLink onPress={() => {}}>{authCopy.forgotPassword}</AuthLink>
+                <AuthLink onPress={() => { }}>{authCopy.forgotPassword}</AuthLink>
               </View>
             </View>
           </View>
+
+          {serverError && (
+            <View className="mt-6 px-6">
+              <View className="rounded-card bg-rose-100 p-3.5">
+                <Text className="font-body text-[12px] leading-[18px] text-primary-700">
+                  {serverError}
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View className="mt-8 px-6">
             <AuthButton
@@ -114,7 +135,9 @@ export default function LoginScreen() {
 
           <View className="mt-7 flex-row items-center justify-center gap-1.5">
             <Text className="font-body text-[13px] text-ink-500">{authCopy.noAccount}</Text>
-            <AuthLink onPress={() => router.replace('/register')}>{authCopy.createOne}</AuthLink>
+            <AuthLink onPress={() => router.replace('/(auth)/register')}>
+              {authCopy.createOne}
+            </AuthLink>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -10,11 +10,11 @@ import {
   PLACE_FOCUS_PADDING,
   PLACE_FOCUS_ZOOM,
 } from '@/theme/mapStyle';
-import type { Place } from '@/types';
+import type { WirePlace } from '@/api/types';
 import { PinMarker } from './PinMarker';
 
 type ExploreMapProps = {
-  places: Place[];
+  places: WirePlace[];
   selectedId: string;
   onSelect: (id: string) => void;
 };
@@ -62,7 +62,11 @@ export function ExploreMap({ places, selectedId, onSelect }: ExploreMapProps) {
             pin flies the map to that place instead of leaving it at city scale. */}
         <Camera
           key={selectedId}
-          center={activePlace?.lngLat ?? [peshawarOverview.longitude, peshawarOverview.latitude]}
+          center={
+            activePlace
+              ? [activePlace.lng, activePlace.lat]
+              : [peshawarOverview.longitude, peshawarOverview.latitude]
+          }
           zoom={activePlace ? PLACE_FOCUS_ZOOM : peshawarOverview.zoomLevel}
           padding={PLACE_FOCUS_PADDING}
           duration={PLACE_FOCUS_DURATION}
@@ -70,7 +74,7 @@ export function ExploreMap({ places, selectedId, onSelect }: ExploreMapProps) {
         />
 
         {places.map((place) => (
-          <Marker key={place.id} lngLat={place.lngLat} anchor="center">
+          <Marker key={place.id} lngLat={[place.lng, place.lat]} anchor="center">
             <PinMarker place={place} selected={place.id === selectedId} onPress={onSelect} />
           </Marker>
         ))}
@@ -80,22 +84,6 @@ export function ExploreMap({ places, selectedId, onSelect }: ExploreMapProps) {
       <View className="absolute right-3 top-16 gap-2.5">
         <OverlayButton icon="layers-outline" label="Map layers" />
         <OverlayButton icon="navigation-variant" label="Recenter on me" />
-      </View>
-
-      {/* Circle filter chip */}
-      <View
-        className="absolute bottom-3 left-3 flex-row items-center gap-1.5 rounded-pill bg-paper-50 px-3 py-2"
-        style={{
-          shadowColor: '#1c1815',
-          shadowOpacity: 0.12,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 3 },
-          elevation: 3,
-        }}>
-        <MaterialCommunityIcons name="account-group-outline" size={14} color="#8e2c39" />
-        <Text className="font-body-medium text-[11px] text-ink-700">
-          Places through your people
-        </Text>
       </View>
 
       {/* Attribution — required wherever these tiles appear, so it stays

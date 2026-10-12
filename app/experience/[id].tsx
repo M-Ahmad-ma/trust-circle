@@ -125,7 +125,20 @@ export default function ExperienceScreen() {
         </View>
       )}
 
-      {state.kind === 'ready' && <ExperienceBody experience={state.experience} />}
+      {state.kind === 'ready' && (
+        <>
+          <ExperienceBody experience={state.experience} />
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
+            accessibilityRole="button"
+            accessibilityLabel={experienceCopy.back}
+            hitSlop={10}
+            className="absolute left-4 h-9 w-9 items-center justify-center rounded-full bg-black/40 active:opacity-70"
+            style={{ top: insets.top + 58 }}>
+            <MaterialCommunityIcons name="arrow-left" color="white" size={20} />
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }
@@ -141,7 +154,7 @@ function ExperienceBody({ experience }: { experience: ExperienceDetail }) {
 
   return (
     <ScrollView
-      className="flex-1"
+      className="relative flex-1"
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: 40 }}>
       {resolvedPhotos.length > 0 && (
@@ -158,6 +171,10 @@ function ExperienceBody({ experience }: { experience: ExperienceDetail }) {
         </ScrollView>
       )}
 
+      <View className="absolute left-3 top-3">
+        <MaterialCommunityIcons name="arrow-left" color="white" size={18} />
+      </View>
+
       <View className="px-5 pt-6">
         <Text className="font-display text-[26px] leading-[32px] text-ink-900">{place.name}</Text>
 
@@ -167,12 +184,7 @@ function ExperienceBody({ experience }: { experience: ExperienceDetail }) {
         </Text>
 
         <View className="mt-4 flex-row items-center gap-3">
-          <Avatar
-            user={{ id: reviewer.id, name: reviewer.name, coverPhoto: reviewer.avatarPath }}
-            size={42}
-            ringColor="#fdfaf4"
-            ringWidth={2}
-          />
+          <Avatar user={reviewer} size={42} ringColor="#fdfaf4" ringWidth={2} />
           <View className="flex-1">
             <Text className="font-body-semibold text-[13.5px] text-ink-900">{reviewer.name}</Text>
             <View className="mt-1.5">

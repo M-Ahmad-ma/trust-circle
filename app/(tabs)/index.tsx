@@ -115,10 +115,6 @@ export default function ExploreScreen() {
   );
 }
 
-/**
- * The API's Place has no cover image, rating or open hours, so this summary
- * shows only fields that genuinely exist rather than inventing the rest.
- */
 function PlaceSummary({
   place,
   onOpen,

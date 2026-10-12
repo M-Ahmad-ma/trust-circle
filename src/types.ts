@@ -17,6 +17,6 @@ export type ViewMode = 'map' | 'list';
 export type AvatarUser = {
   id: string;
   name: string;
-  /** Relative path from the API, e.g. '/uploads/abc.png'. */
-  coverPhoto?: string | null;
+  /** Relative path from the API, e.g. '/uploads/abc.png'. Matches the wire name. */
+  avatarPath?: string | null;
 };

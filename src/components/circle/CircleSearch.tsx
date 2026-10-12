@@ -5,11 +5,17 @@ type CircleSearchProps = {
   value: string;
   placeholder: string;
   onChange: (value: string) => void;
+  /** Replaces the default `mx-4 mt-6` when the field sits inside padded content. */
+  className?: string;
 };
 
-export function CircleSearch({ value, placeholder, onChange }: CircleSearchProps) {
+export function CircleSearch({ value, placeholder, onChange, className }: CircleSearchProps) {
   return (
-    <View className="mx-4 mt-6 flex-row items-center rounded-pill border border-border bg-paper-50 px-4">
+    <View
+      className={
+        className ??
+        'mx-4 mt-6 flex-row items-center rounded-pill border border-border bg-paper-50 px-4'
+      }>
       <MaterialCommunityIcons name="magnify" size={17} color="#9a8e85" />
       <TextInput
         value={value}

@@ -30,16 +30,7 @@ export function ExperienceRow({
       accessibilityLabel={onOpen ? 'Open experience' : undefined}
       className="overflow-hidden rounded-card border border-hairline bg-paper-50">
       <View className="flex-row items-center px-4 pt-4">
-        <Avatar
-          user={{
-            id: experience.reviewer.id,
-            name: experience.reviewer.name,
-            coverPhoto: experience.reviewer.avatarPath,
-          }}
-          size={38}
-          ringColor="#fdfaf4"
-          ringWidth={2}
-        />
+        <Avatar user={experience.reviewer} size={38} ringColor="#fdfaf4" ringWidth={2} />
 
         <View className="ml-3 flex-1">
           <Text numberOfLines={1} className="font-body-semibold text-[13.5px] text-ink-900">

@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/EmptyState';
 import { PlaceHeading } from '@/components/place/PlaceHeading';
 import { ACTION_BAR_CONTENT_HEIGHT, PlaceActionBar } from '@/components/place/PlaceActionBar';
 import { ExperienceRow } from '@/components/place/ExperienceRow';
+import { PlaceBackButton } from '@/components/place/PlaceBackButton';
 import { PlaceHero, hasHero } from '@/components/place/PlaceHero';
 import { placeCopyApi } from '@/data';
 import { useApiQuery } from '@/lib/useApiQuery';
@@ -42,6 +43,8 @@ export default function PlaceDetailScreen() {
           className="active:opacity-60">
           <Text className="font-body-semibold text-[13px] text-primary-600">Back to the map</Text>
         </Pressable>
+
+        <PlaceBackButton topInset={insets.top} />
       </View>
     );
   }
@@ -134,6 +137,11 @@ export default function PlaceDetailScreen() {
           onToggleSave={() => setSaved((value) => !value)}
         />
       )}
+
+      {/* Floats above the hero, so it stays reachable with no top bar of its own.
+          The dark scrim keeps the white arrow legible over the photo and over the
+          paper once it scrolls away. */}
+      <PlaceBackButton topInset={insets.top} />
     </View>
   );
 }

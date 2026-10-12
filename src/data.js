@@ -184,6 +184,7 @@ export const circleCopyApi = {
   suggestionsBody:
     'People who have been to the same places as you. Their shared visit has to be something you were both allowed to see.',
   suggestionsLoading: 'Looking for shared places…',
+  filterSuggestions: 'Search these people',
   suggestionsFailed: 'We could not find anyone just now.',
   suggestionsEmptyTitle: 'No shared places yet',
   suggestionsEmptyBody:
@@ -199,6 +200,15 @@ export const circleCopyApi = {
 export const profileCopyApi = {
   loading: 'Loading your profile…',
   failed: 'We could not load your profile.',
+  addToCircle: 'Add to Circle',
+  removeFromCircle: 'Remove from Circle',
+  removeConfirmTitle: 'Remove from your Circle?',
+  removeConfirmBody:
+    'Anything they shared only with their Circle or Extended Circle stops being visible to you. Nothing is deleted, and you can add them again at any time.',
+  removeConfirmAction: 'Remove',
+  removeCancel: 'Keep them',
+  removed: 'Removed from your Circle.',
+  removeFailed: 'We could not remove them just now. Try again in a moment.',
   noExperiencesTitle: 'No experiences yet',
   noExperiencesBody: 'Visit somewhere, then write it up. It only reaches the people you choose.',
   writeFirst: 'Write your first experience',
@@ -210,11 +220,19 @@ export const profileCopyApi = {
   noPhotosBody: 'Photos you attach to an experience show up here.',
   noPlacesTitle: 'No places yet',
   noPlacesBody: 'Places you write about will collect here.',
+  signOut: 'Sign out',
+  signOutBusy: 'Signing out…',
+  signOutConfirmTitle: 'Sign out of Trust Circle?',
+  signOutConfirmBody:
+    'You will need to sign in again to post, and your Circle requests waiting for you stay where they are.',
+  signOutConfirmAction: 'Sign out',
+  signOutCancel: 'Stay signed in',
 };
 
 export const placeCopyApi = {
   loading: 'Loading place…',
   failed: 'We could not load this place.',
+  back: 'Go back',
   noExperiencesTitle: 'No experiences yet',
   noExperiencesBody: 'Nobody you can see has written about this place. Be the first.',
   writeFirst: 'Write an experience',

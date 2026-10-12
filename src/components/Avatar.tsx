@@ -41,11 +41,13 @@ type AvatarProps = {
  * derived from their name. Seeded and most real users have no photo, so the
  * monogram path is the common case, not the fallback.
  *
- * The photo arrives as `user.coverPhoto`, mapped from the API's `avatarPath` by
- * the caller — the wire name and the view name differ on purpose.
+ * `avatarPath` deliberately keeps the API's own name so every wire-shaped user
+ * (`SlimUser`, `AuthUser`) can be passed straight in. Renaming it here would let
+ * a caller hand in a `SlimUser` that satisfies this type while carrying no photo
+ * at all, and TypeScript would not catch it — the field is optional.
  */
 export function Avatar({ user, size = 32, ringColor, ringWidth = 0, tintOverride }: AvatarProps) {
-  const uri = absoluteUrl(user.coverPhoto);
+  const uri = absoluteUrl(user.avatarPath);
 
   if (uri) {
     return (

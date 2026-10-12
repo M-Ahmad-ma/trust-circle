@@ -2,12 +2,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
+import { ProfileAddFriend } from '@/components/profile/ProfileAddFriend';
+import { ProfileRemoveFriend } from '@/components/profile/ProfileRemoveFriend';
 import { RelationshipBadge } from '@/components/write/Relationship';
 import type { Relationship } from '@/api/types';
 
 const AVATAR = 112;
 
 type ProfileHeaderProps = {
+  userId: string;
   name: string;
   bio: string | null;
   avatarPath: string | null;
@@ -16,6 +19,8 @@ type ProfileHeaderProps = {
   stats: { experiences: number; friends: number };
   editLabel: string;
   onEdit: () => void;
+  /** Refreshes the profile when the server reports they are already a friend. */
+  onBecameFriend?: () => void;
 };
 
 /**
@@ -24,6 +29,7 @@ type ProfileHeaderProps = {
  * those are not invented here.
  */
 export function ProfileHeader({
+  userId,
   name,
   bio,
   avatarPath,
@@ -32,12 +38,13 @@ export function ProfileHeader({
   stats,
   editLabel,
   onEdit,
+  onBecameFriend,
 }: ProfileHeaderProps) {
   return (
     <View className="bg-paper-50">
       <View className="items-center px-7 pt-5">
         <Avatar
-          user={{ id: name, name, coverPhoto: avatarPath }}
+          user={{ id: name, name, avatarPath }}
           size={AVATAR}
           ringColor="#fdfaf4"
           ringWidth={3}
@@ -65,7 +72,11 @@ export function ProfileHeader({
         <Stat label="Circle" value={stats.friends} showDivider />
       </View>
 
-      {isSelf && (
+      {/* Exactly one of three actions, never two: Edit for yourself, Remove for
+          a current friend, Add for anyone else. Relationship drives the choice —
+          there is no `pending` state to render, so an in-flight request still
+          reads as `none` and correctly shows Add. */}
+      {isSelf ? (
         <View className="px-7 pb-5">
           <Pressable
             onPress={onEdit}
@@ -75,6 +86,19 @@ export function ProfileHeader({
             <Text className="font-body-semibold text-[14px] text-primary-600">{editLabel}</Text>
           </Pressable>
         </View>
+      ) : relationship?.type === 'direct_friend' ? (
+        <ProfileRemoveFriend
+          userId={userId}
+          userName={name}
+          onRemoved={onBecameFriend ?? (() => {})}
+        />
+      ) : (
+        <ProfileAddFriend
+          userId={userId}
+          userName={name}
+          relationship={relationship}
+          onBecameFriend={onBecameFriend}
+        />
       )}
     </View>
   );

@@ -108,7 +108,7 @@ export default function LoginScreen() {
               />
 
               <View className="mt-2 self-end">
-                <AuthLink onPress={() => { }}>{authCopy.forgotPassword}</AuthLink>
+                <AuthLink onPress={() => {}}>{authCopy.forgotPassword}</AuthLink>
               </View>
             </View>
           </View>

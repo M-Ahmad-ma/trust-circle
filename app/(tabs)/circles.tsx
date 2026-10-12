@@ -52,6 +52,20 @@ function SuggestionSection({
 }: SuggestionSectionProps) {
   const [suggesting, setSuggesting] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  // Filtered on the loaded rows rather than refetched per keystroke: this list is
+  // capped at `limit`, so re-querying would only add latency and could reorder
+  // results under the cursor. `/profile/search` is the real name search — it
+  // reaches every user, not just the dozen who share a place.
+  const needle = search.trim().toLowerCase();
+  const shown = !needle
+    ? items
+    : items.filter(
+      (suggestion) =>
+        suggestion.user.name.toLowerCase().includes(needle) ||
+        (suggestion.user.bio ?? '').toLowerCase().includes(needle)
+    );
 
   const suggest = async (user: UserSuggestion['user']) => {
     setSuggesting(user.id);
@@ -95,8 +109,8 @@ function SuggestionSection({
 
       {status === 'error' && <ErrorState label={errorMessage} onRetry={onRetry} />}
 
-      {/* `items` is empty while loading too, so the empty state waits for a
-          settled query rather than flashing before the first row arrives. */}
+
+
       {settled && items.length === 0 && (
         <EmptyState
           icon="account-search-outline"
@@ -107,6 +121,15 @@ function SuggestionSection({
         />
       )}
 
+      {settled && items.length > 0 && shown.length === 0 && (
+        <EmptyState
+          icon="account-search-outline"
+          tone="sand"
+          compact
+          title={`Nobody matches “${search.trim()}”`}
+        />
+      )}
+
       {notice && (
         <View className="mt-3 rounded-card bg-accent-50 p-3.5">
           <Text className="font-body text-[12px] leading-[18px] text-accent-700">{notice}</Text>
@@ -114,7 +137,7 @@ function SuggestionSection({
       )}
 
       <View className="mt-4 gap-2">
-        {items.map((suggestion) => {
+        {shown.map((suggestion) => {
           const reason = sharedPlaceReason(suggestion);
           return (
             <View

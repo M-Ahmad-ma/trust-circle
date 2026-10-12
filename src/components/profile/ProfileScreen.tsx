@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { usersApi } from '@/api';
-import { absoluteUrl } from '@/api/session';
+import { authApi, usersApi } from '@/api';
+import { absoluteUrl, getRefreshToken } from '@/api/session';
 import type { ExperienceCard, UserProfile } from '@/api/types';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState, ErrorState, LoadingState } from '@/components/EmptyState';
@@ -37,6 +37,7 @@ export function ProfileScreen({
 }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<ProfileTab>('reviews');
+  const [signingOut, setSigningOut] = useState(false);
 
   const profile = useApiQuery<UserProfile>(() => usersApi.getUser(userId), {
     key: `profile:${userId}`,
@@ -60,6 +61,34 @@ export function ProfileScreen({
   const photoKeys = (experiences.data ?? []).flatMap((experience) =>
     experience.photos.map((photo) => photo.url)
   );
+
+  /**
+   * `logout` revokes the refresh token and then clears local storage, and it
+   * clears even when the network call fails — signing out must never strand
+   * someone in an app they asked to leave. The redirect is belt-and-braces: the
+   * `(auth)` and `(tabs)` layouts also swap on session change, but this screen is
+   * mounted outside `(tabs)` too, so navigating here covers every entry point.
+   */
+  const signOut = async () => {
+    setSigningOut(true);
+    try {
+      await authApi.logout(getRefreshToken());
+      router.replace('/(auth)/login');
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  const confirmSignOut = () => {
+    Alert.alert(profileCopyApi.signOutConfirmTitle, profileCopyApi.signOutConfirmBody, [
+      { text: profileCopyApi.signOutCancel, style: 'cancel' },
+      {
+        text: profileCopyApi.signOutConfirmAction,
+        style: 'destructive',
+        onPress: () => void signOut(),
+      },
+    ]);
+  };
 
   return (
     <View className="flex-1 bg-paper-100">
@@ -94,6 +123,7 @@ export function ProfileScreen({
 
         {user && (
           <ProfileHeader
+            userId={userId}
             name={user.name}
             bio={user.bio}
             avatarPath={user.avatarPath}
@@ -105,6 +135,7 @@ export function ProfileScreen({
             }}
             editLabel="Edit Profile"
             onEdit={onEditProfile ?? (() => {})}
+            onBecameFriend={profile.refetch}
           />
         )}
 
@@ -194,6 +225,24 @@ export function ProfileScreen({
             )}
           </View>
         )}
+
+        {/* Sign-out is destructive and only ever meaningful on your own profile,
+            so it sits at the very bottom and stays hidden when you are looking
+            at someone else. */}
+        {user && isSelf && (
+          <Pressable
+            onPress={confirmSignOut}
+            disabled={signingOut}
+            accessibilityRole="button"
+            accessibilityLabel={profileCopyApi.signOut}
+            accessibilityState={{ disabled: signingOut }}
+            className="mx-6 mt-10 items-center rounded-xl  border border-danger-500 px-6 py-3 active:opacity-70"
+            style={{ opacity: signingOut ? 0.5 : 1 }}>
+            <Text className="font-body-semibold text-[13px] text-danger-600">
+              {signingOut ? profileCopyApi.signOutBusy : profileCopyApi.signOut}
+            </Text>
+          </Pressable>
+        )}
       </ScrollView>
     </View>
   );
@@ -206,16 +255,7 @@ function ExperienceRow({ experience }: { experience: ExperienceCard }) {
   return (
     <View className="overflow-hidden rounded-card border border-hairline bg-paper-50 px-5 pb-4 pt-4">
       <View className="flex-row items-center">
-        <Avatar
-          user={{
-            id: experience.reviewer.id,
-            name: experience.reviewer.name,
-            coverPhoto: experience.reviewer.avatarPath,
-          }}
-          size={40}
-          ringColor="#fdfaf4"
-          ringWidth={2}
-        />
+        <Avatar user={experience.reviewer} size={40} ringColor="#fdfaf4" ringWidth={2} />
 
         <View className="ml-3 flex-1">
           <Text className="font-body-semibold text-[14px] text-ink-900">

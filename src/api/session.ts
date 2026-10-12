@@ -51,6 +51,15 @@ export function getAccessToken(): string | null {
   return accessToken;
 }
 
+/**
+ * Read by `authApi.logout` so the server can revoke this exact token. Exposed
+ * rather than wrapped so the caller can revoke server-side and then clear
+ * locally through the one path that keeps both stores in step.
+ */
+export function getRefreshToken(): string | null {
+  return refreshToken;
+}
+
 export function hasSession(): boolean {
   return accessToken !== null;
 }

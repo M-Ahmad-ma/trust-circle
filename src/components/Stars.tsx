@@ -38,7 +38,15 @@ export function Stars({ rating, size = 13, gap = 2 }: StarsProps) {
           <View key={i} style={{ width: size, height: size }}>
             <Star size={size} color={EMPTY} />
             {fill > 0 && (
-              <View style={{ width: size * fill, height: size, overflow: 'hidden' }}>
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: size * fill,
+                  height: size,
+                  overflow: 'hidden',
+                }}>
                 <Star size={size} color={FILLED} />
               </View>
             )}

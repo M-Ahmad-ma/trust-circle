@@ -19,15 +19,10 @@ type ProfileHeaderProps = {
   stats: { experiences: number; friends: number };
   editLabel: string;
   onEdit: () => void;
-  /** Refreshes the profile when the server reports they are already a friend. */
   onBecameFriend?: () => void;
 };
 
-/**
- * Counts come from the API's viewer-aware `counts`. It exposes only experiences
- * and friends — there is no server-side photo or "places visited" count, so
- * those are not invented here.
- */
+
 export function ProfileHeader({
   userId,
   name,
@@ -72,10 +67,7 @@ export function ProfileHeader({
         <Stat label="Circle" value={stats.friends} showDivider />
       </View>
 
-      {/* Exactly one of three actions, never two: Edit for yourself, Remove for
-          a current friend, Add for anyone else. Relationship drives the choice —
-          there is no `pending` state to render, so an in-flight request still
-          reads as `none` and correctly shows Add. */}
+
       {isSelf ? (
         <View className="px-7 pb-5">
           <Pressable
@@ -90,7 +82,7 @@ export function ProfileHeader({
         <ProfileRemoveFriend
           userId={userId}
           userName={name}
-          onRemoved={onBecameFriend ?? (() => {})}
+          onRemoved={onBecameFriend ?? (() => { })}
         />
       ) : (
         <ProfileAddFriend
@@ -124,7 +116,6 @@ function Stat({
   );
 }
 
-/** Kept for screens that still need an icon-only affordance. */
 export function ProfilePlaceholder({ label }: { label: string }) {
   return (
     <View className="items-center py-6">

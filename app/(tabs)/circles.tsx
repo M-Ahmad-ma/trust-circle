@@ -32,17 +32,9 @@ type SuggestionSectionProps = {
   items: UserSuggestion[];
   errorMessage: string;
   onRetry: () => void;
-  /** Fires when an Add turns out to have made them a friend already. */
   onBecameFriend: () => void;
 };
 
-/**
- * People who have been to the same places as you, each with the reason shown.
- *
- * This is its own section rather than an empty-state for the friends list: a
- * full circle still wants new people in it, and the "who should I know" question
- * does not stop being worth asking just because you have three friends already.
- */
 function SuggestionSection({
   status,
   items,
@@ -54,18 +46,14 @@ function SuggestionSection({
   const [notice, setNotice] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  // Filtered on the loaded rows rather than refetched per keystroke: this list is
-  // capped at `limit`, so re-querying would only add latency and could reorder
-  // results under the cursor. `/profile/search` is the real name search — it
-  // reaches every user, not just the dozen who share a place.
   const needle = search.trim().toLowerCase();
   const shown = !needle
     ? items
     : items.filter(
-      (suggestion) =>
-        suggestion.user.name.toLowerCase().includes(needle) ||
-        (suggestion.user.bio ?? '').toLowerCase().includes(needle)
-    );
+        (suggestion) =>
+          suggestion.user.name.toLowerCase().includes(needle) ||
+          (suggestion.user.bio ?? '').toLowerCase().includes(needle)
+      );
 
   const suggest = async (user: UserSuggestion['user']) => {
     setSuggesting(user.id);
@@ -109,7 +97,17 @@ function SuggestionSection({
 
       {status === 'error' && <ErrorState label={errorMessage} onRetry={onRetry} />}
 
-
+      {/* Only when there is something to filter — a search box above an empty
+          list is noise. `className` replaces CircleSearch's own `mx-4 mt-6` so
+          the field lines up with the heading and cards in this padded section. */}
+      {settled && items.length > 0 && (
+        <CircleSearch
+          value={search}
+          placeholder={circleCopyApi.filterSuggestions}
+          onChange={setSearch}
+          className="mt-4 flex-row items-center rounded-pill border border-border bg-paper-50 px-4"
+        />
+      )}
 
       {settled && items.length === 0 && (
         <EmptyState
@@ -178,11 +176,26 @@ function SuggestionSection({
       <Pressable
         onPress={() => router.push('/profile/search')}
         accessibilityRole="button"
-        className="mt-4 self-start active:opacity-60">
+        className="mt-4 flex flex-row items-center gap-2 self-start active:opacity-60">
         <Text className="font-body-semibold text-[13px] text-primary-600">
           {circleCopyApi.searchByNameLink}
         </Text>
+        <MaterialCommunityIcons name="arrow-right" size={18} color="#7e2534" />
       </Pressable>
+    </View>
+  );
+}
+
+function RequestsEmptyState() {
+  return (
+    <View className="mt-3 items-center rounded-card border border-dashed border-sand-400 bg-paper-100 px-6 py-7">
+      <MaterialCommunityIcons name="account-check-outline" size={22} color="#b8a37c" />
+      <Text className="mt-2.5 font-body-semibold text-[13px] text-ink-600">
+        {circleCopyApi.noRequestsTitle}
+      </Text>
+      <Text className="mt-1 max-w-[260px] text-center font-body text-[12px] leading-[18px] text-ink-400">
+        {circleCopyApi.noRequestsBody}
+      </Text>
     </View>
   );
 }
@@ -327,10 +340,12 @@ export default function CircleScreen() {
               {circleCopyApi.requests}
             </Text>
 
-            {incoming.length === 0 ? (
-              <Text className="mt-3 font-body text-[12px] text-ink-400">
-                {circleCopyApi.noRequests}
-              </Text>
+            {requests.status === 'error' ? (
+              <View className="mt-3">
+                <ErrorState label={requests.message} onRetry={requests.refetch} />
+              </View>
+            ) : incoming.length === 0 ? (
+              <RequestsEmptyState />
             ) : (
               <View className="mt-3 gap-2">
                 {incoming.map((request) => (

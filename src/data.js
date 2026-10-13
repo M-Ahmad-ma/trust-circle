@@ -166,6 +166,7 @@ export const exploreCopy = {
   addAPlace: 'Add a place',
   writeExperience: 'Write an experience here',
   experiencesVisible: 'experiences you can see',
+  averageRating: 'Average rating',
   viewPlace: 'View place',
   place: 'Place',
 };
@@ -178,7 +179,9 @@ export const circleCopyApi = {
   requests: 'Requests',
   accept: 'Accept',
   decline: 'Decline',
-  noRequests: 'No pending requests',
+  noRequestsTitle: 'Nothing waiting',
+  noRequestsBody:
+    'When someone asks to join your Circle, they will show up here for you to accept.',
   filterCircle: 'Filter your circle',
   suggestionsTitle: 'People you might trust',
   suggestionsBody:
@@ -201,6 +204,16 @@ export const profileCopyApi = {
   loading: 'Loading your profile…',
   failed: 'We could not load your profile.',
   addToCircle: 'Add to Circle',
+  nameLabel: 'Name',
+  bioLabel: 'Bio',
+  changePhoto: 'Change photo',
+  uploadingPhoto: 'Uploading…',
+  saveChanges: 'Save changes',
+  bioTooLong: 'That bio is a little long',
+  avatarPermissionDenied: 'Trust Circle needs photo access to change your picture.',
+  avatarUploadFailed: 'We could not upload that photo.',
+  editFailed: 'We could not save your changes. Try again in a moment.',
+  editFailedLoad: 'We could not load your profile.',
   removeFromCircle: 'Remove from Circle',
   removeConfirmTitle: 'Remove from your Circle?',
   removeConfirmBody:

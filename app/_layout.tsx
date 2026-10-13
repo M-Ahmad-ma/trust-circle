@@ -81,6 +81,7 @@ export default function RootLayout() {
           options={{ headerShown: false, animation: 'slide_from_right' }}
         />
         <Stack.Screen name="profile/search" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
         <Stack.Screen name="dev/logs" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>

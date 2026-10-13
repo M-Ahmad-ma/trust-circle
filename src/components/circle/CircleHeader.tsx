@@ -25,20 +25,20 @@ export function CircleHeader({
       </View>
 
       {/* Round add button — a circle, not a pill, so it clears the title block. */}
-      <Pressable
-        onPress={onInvite}
-        accessibilityRole="button"
-        accessibilityLabel={inviteLabel}
-        className="mt-1 h-11 w-11 items-center justify-center rounded-pill bg-primary-600 active:bg-primary-700"
-        style={{
-          shadowColor: '#7e2534',
-          shadowOpacity: 0.3,
-          shadowRadius: 10,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 4,
-        }}>
-        <MaterialCommunityIcons name="plus" size={24} color="#fdfaf4" />
-      </Pressable>
+      {/* <Pressable */}
+      {/*   onPress={onInvite} */}
+      {/*   accessibilityRole="button" */}
+      {/*   accessibilityLabel={inviteLabel} */}
+      {/*   className="mt-1 h-11 w-11 items-center justify-center rounded-pill bg-primary-600 active:bg-primary-700" */}
+      {/*   style={{ */}
+      {/*     shadowColor: '#7e2534', */}
+      {/*     shadowOpacity: 0.3, */}
+      {/*     shadowRadius: 10, */}
+      {/*     shadowOffset: { width: 0, height: 4 }, */}
+      {/*     elevation: 4, */}
+      {/*   }}> */}
+      {/*   <MaterialCommunityIcons name="plus" size={24} color="#fdfaf4" /> */}
+      {/* </Pressable> */}
     </View>
   );
 }

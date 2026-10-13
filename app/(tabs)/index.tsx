@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 import { placesApi, usersApi } from '@/api';
 import type { WirePlace } from '@/api/types';
@@ -11,11 +11,11 @@ import { ExploreHeader } from '@/components/ExploreHeader';
 import { ExploreMap } from '@/components/ExploreMap';
 import { Screen } from '@/components/Screen';
 import { SearchField } from '@/components/SearchField';
+import { Stars } from '@/components/Stars';
 import { ViewModeToggle } from '@/components/ViewModeToggle';
 import { exploreCopy } from '@/data';
 import { useApiQuery } from '@/lib/useApiQuery';
 
-/** Peshawar — the centre used until device location lands. */
 const CENTER = { lat: 34.015, lng: 71.58 };
 const RADIUS_M = 20_000;
 
@@ -52,24 +52,25 @@ export default function ExploreScreen() {
   const list = places.data ?? [];
   const selected = list.find((place) => place.id === selectedId) ?? list[0] ?? null;
 
-  console.log(list);
-
   return (
     <Screen className="bg-paper-100" edges={['top']}>
-      <ExploreHeader eyebrow={exploreCopy.eyebrow} title={exploreCopy.title} />
 
-      <SearchField value={query} placeholder={exploreCopy.searchPlaceholder} onChange={setQuery} />
+      <View className="mt-4 grow-0 flex items-end justify-between flex-row">
+        <ExploreHeader eyebrow={exploreCopy.eyebrow} title={exploreCopy.title} />
 
-      <View className="mt-4 grow-0">
         {me.data ? (
-          <View className="flex-row items-center gap-2 px-4">
-            <Avatar user={me.data} size={24} />
-            <Text numberOfLines={1} className="flex-1 font-body text-[12px] text-ink-500">
-              {me.data.bio ?? exploreCopy.noBio}
-            </Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => router.push("/profile")}
+          >
+            <View className="flex-row items-center gap-2 px-4">
+              <Avatar user={me.data} size={24} />
+            </View>
+          </TouchableOpacity>
         ) : null}
       </View>
+
+
+      <SearchField value={query} placeholder={exploreCopy.searchPlaceholder} onChange={setQuery} />
 
       <View className="relative mt-4 flex-1 overflow-hidden">
         {places.status === 'loading' && !places.data && (
@@ -154,12 +155,24 @@ function PlaceSummary({
         </Pressable>
       </View>
 
+      {/* `avgRating` is `number | null` — a place with no experiences you can see
+          has none — so it is gated on its own rather than folded into the count,
+          which would render a trailing "· " with nothing after it. */}
+      {typeof place.avgRating === 'number' && (
+        <View className="mt-3 flex-row items-center gap-2">
+          <Stars rating={place.avgRating} size={14} gap={2} />
+          <Text className="font-body-bold text-[13px] text-ink-800">
+            {place.avgRating.toFixed(1)}
+          </Text>
+          <Text className="font-body text-[11.5px] text-ink-400">{exploreCopy.averageRating}</Text>
+        </View>
+      )}
+
       {typeof place.experienceCount === 'number' && place.experienceCount > 0 && (
-        <View className="mt-3 flex-row items-center gap-1.5">
+        <View className="mt-2 flex-row items-center gap-1.5">
           <View className="h-1.5 w-1.5 rounded-pill bg-moss-500" />
           <Text className="font-body text-[11.5px] text-ink-500">
             {place.experienceCount} {exploreCopy.experiencesVisible}
-            {typeof place.avgRating === 'number' ? ` · ${place.avgRating.toFixed(1)} average` : ''}
           </Text>
         </View>
       )}
@@ -176,7 +189,6 @@ function PlaceSummary({
   );
 }
 
-/** List mode: the real places the search returned. */
 function PlaceDirectory({
   places,
   onSelect,

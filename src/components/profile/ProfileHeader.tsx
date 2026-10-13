@@ -22,7 +22,6 @@ type ProfileHeaderProps = {
   onBecameFriend?: () => void;
 };
 
-
 export function ProfileHeader({
   userId,
   name,
@@ -67,7 +66,6 @@ export function ProfileHeader({
         <Stat label="Circle" value={stats.friends} showDivider />
       </View>
 
-
       {isSelf ? (
         <View className="px-7 pb-5">
           <Pressable
@@ -82,7 +80,7 @@ export function ProfileHeader({
         <ProfileRemoveFriend
           userId={userId}
           userName={name}
-          onRemoved={onBecameFriend ?? (() => { })}
+          onRemoved={onBecameFriend ?? (() => {})}
         />
       ) : (
         <ProfileAddFriend

@@ -19,8 +19,6 @@ import { experienceCopy } from '@/data';
 type State =
   | { kind: 'loading' }
   | { kind: 'ready'; experience: ExperienceDetail }
-  // 403 NOT_VISIBLE means it exists but is hidden from you; 404 means it is
-  // gone. API.md §4 is explicit that these need different copy.
   | { kind: 'hidden' }
   | { kind: 'missing' }
   | { kind: 'error' };
@@ -31,8 +29,6 @@ export default function ExperienceScreen() {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [retryKey, setRetryKey] = useState(0);
 
-  // Retry re-runs the effect by bumping the key. The cancellation flag prevents
-  // a late response from setting state on an unmounted screen.
   useEffect(() => {
     if (!id) return;
 

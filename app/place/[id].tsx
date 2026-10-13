@@ -119,6 +119,9 @@ export default function PlaceDetailScreen() {
                   key={experience.id}
                   experience={experience}
                   onOpen={() => router.push(`/experience/${experience.id}`)}
+                  // On a place, the reviewers are other people, so their profile
+                  // is somewhere worth going.
+                  onOpenReviewer={() => router.push(`/profile/${experience.reviewer.id}`)}
                 />
               ))}
             </View>

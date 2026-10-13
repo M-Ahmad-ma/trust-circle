@@ -20,26 +20,19 @@ export function ProfileTopBar({
 }: ProfileTopBarProps) {
   return (
     <View className="border-b border-hairline bg-paper-50" style={{ paddingTop: topInset }}>
-      <View className="h-12 flex-row items-center justify-between px-3">
+      <View className="relative  h-12 px-3 ">
         <Pressable
           onPress={onBack}
           accessibilityRole="button"
           accessibilityLabel={backLabel}
           hitSlop={10}
-          className="h-10 w-10 items-center justify-center active:opacity-60">
+          className="h-10 w-10  active:opacity-60">
           <MaterialCommunityIcons name="chevron-left" size={26} color="#292426" />
         </Pressable>
 
-        <Text className="font-body-bold text-[15px] text-ink-900">@{handle}</Text>
-
-        <Pressable
-          onPress={onSettings}
-          accessibilityRole="button"
-          accessibilityLabel={settingsLabel}
-          hitSlop={10}
-          className="h-10 w-10 items-center justify-center active:opacity-60">
-          <MaterialCommunityIcons name="cog-outline" size={21} color="#292426" />
-        </Pressable>
+        <Text className=" absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-body-bold text-[15px] text-ink-900">
+          @{handle}
+        </Text>
       </View>
     </View>
   );

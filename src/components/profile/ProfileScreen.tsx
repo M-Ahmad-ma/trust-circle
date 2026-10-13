@@ -91,12 +91,12 @@ export function ProfileScreen({
   return (
     <View className="flex-1 bg-paper-100">
       <ProfileTopBar
-        handle={user ? `@${handleFor(user.name)}` : ''}
+        handle={user ? `${handleFor(user.name)}` : ''}
         backLabel="Go back"
         settingsLabel="Settings"
         topInset={insets.top}
         onBack={onBack}
-        onSettings={onOpenSettings ?? (() => {})}
+        onSettings={onOpenSettings ?? (() => { })}
       />
 
       <ScrollView
@@ -167,9 +167,9 @@ export function ProfileScreen({
                 body={profileCopyApi.noExperiencesBody}
                 {...(isSelf
                   ? {
-                      actionLabel: profileCopyApi.writeFirst,
-                      onAction: () => router.navigate('/write/place'),
-                    }
+                    actionLabel: profileCopyApi.writeFirst,
+                    onAction: () => router.navigate('/write/place'),
+                  }
                   : {})}
               />
             )}
@@ -187,9 +187,20 @@ export function ProfileScreen({
                   onPress={() => onOpenPlace(experience.place.id)}
                 />
                 <View className="px-6">
+                  {/* `GET /users/:id/experiences` returns experiences *authored
+                      by* that user, so the reviewer is always the profile you
+                      are already on. Verified against the API — every row comes
+                      back with the owner as reviewer. Making the avatar tappable
+                      here would push a duplicate of the current screen, so the
+                      handler is only passed when it could ever lead anywhere. */}
                   <ExperienceRow
                     experience={experience}
                     onOpen={() => router.push(`/experience/${experience.id}`)}
+                    onOpenReviewer={
+                      experience.reviewer.id === userId
+                        ? undefined
+                        : () => router.push(`/profile/${experience.reviewer.id}`)
+                    }
                   />
                 </View>
               </View>

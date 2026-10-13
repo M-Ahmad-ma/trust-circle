@@ -54,21 +54,17 @@ export default function ExploreScreen() {
 
   return (
     <Screen className="bg-paper-100" edges={['top']}>
-
-      <View className="mt-4 grow-0 flex items-end justify-between flex-row">
+      <View className="mt-4 flex grow-0 flex-row items-end justify-between">
         <ExploreHeader eyebrow={exploreCopy.eyebrow} title={exploreCopy.title} />
 
         {me.data ? (
-          <TouchableOpacity
-            onPress={() => router.push("/profile")}
-          >
+          <TouchableOpacity onPress={() => router.push('/profile')}>
             <View className="flex-row items-center gap-2 px-4">
               <Avatar user={me.data} size={24} />
             </View>
           </TouchableOpacity>
         ) : null}
       </View>
-
 
       <SearchField value={query} placeholder={exploreCopy.searchPlaceholder} onChange={setQuery} />
 

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import type { ComponentProps } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -22,6 +22,9 @@ type State =
   | { kind: 'hidden' }
   | { kind: 'missing' }
   | { kind: 'error' };
+
+/** Landscape-ish strip; tall enough to read the place, short enough to leave room. */
+const PHOTO_STRIP_HEIGHT = 260;
 
 export default function ExperienceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -213,18 +216,38 @@ function ExperienceBody({
     .map((photo) => ({ id: photo.id, uri: absoluteUrl(photo.url) }))
     .filter((photo): photo is { id: string; uri: string } => photo.uri !== null);
 
+  // Sized to the viewport rather than a fixed width, so a photo fills the screen
+  // on any device and a second one is visibly a second one.
+  const { width: screenWidth } = useWindowDimensions();
+  const photoWidth = screenWidth - 24;
+
+  console.log(place, "place")
+  console.log(reviewer, "review")
+  console.log("experience", experience)
+
+  console.log(resolvedPhotos[0].uri)
+
   return (
     <ScrollView
       className="relative flex-1"
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: 40 }}>
       {resolvedPhotos.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="grow-0">
+        // Height is pinned rather than left to the nested horizontal ScrollView
+        // to derive from its content. A ScrollView does not report content size
+        // to its parent's layout the way a plain View does, so inside the
+        // vertical ScrollView this one can measure to zero height and take the
+        // photos with it. `PlaceHero` pins its height for the same reason.
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ height: PHOTO_STRIP_HEIGHT }}
+          contentContainerStyle={{ gap: 8 }}>
           {resolvedPhotos.map((photo) => (
             <Image
               key={photo.id}
               source={{ uri: photo.uri }}
-              style={{ width: 420, height: 280 }}
+              style={{ width: photoWidth, height: PHOTO_STRIP_HEIGHT }}
               resizeMode="cover"
               accessibilityIgnoresInvertColors
             />

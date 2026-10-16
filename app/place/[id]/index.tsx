@@ -1,8 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { placesApi, experiencesApi } from '@/api';
 import type { ExperienceCard, WirePlace } from '@/api/types';
@@ -18,7 +20,6 @@ import { useApiQuery } from '@/lib/useApiQuery';
 export default function PlaceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const [saved, setSaved] = useState(false);
 
   const fetchPlace = useCallback(() => placesApi.getPlace(id), [id]);
   const place = useApiQuery<WirePlace>(fetchPlace, {
@@ -87,6 +88,19 @@ export default function PlaceDetailScreen() {
               </Text>
             )}
 
+            {/* Corrections are open to any signed-in user, matching the open
+                POST — so this is not gated on ownership. */}
+            <Pressable
+              onPress={() => router.push(`/place/${data.id}/edit`)}
+              accessibilityRole="button"
+              accessibilityLabel={placeCopyApi.editPlace}
+              className="ml-4 mt-3 flex-row items-center gap-1.5 self-start rounded-pill bg-surface px-3 py-1.5 active:opacity-70">
+              <MaterialCommunityIcons name="pencil-outline" size={13} color="#6b6058" />
+              <Text className="font-body-medium text-[11.5px] text-ink-600">
+                {placeCopyApi.editPlace}
+              </Text>
+            </Pressable>
+
             <View className="mt-7 px-4">
               <View className="flex-row items-baseline justify-between">
                 <Text className="font-display-semibold text-[18px] text-ink-900">Experiences</Text>
@@ -132,12 +146,8 @@ export default function PlaceDetailScreen() {
       {data && (
         <PlaceActionBar
           writeLabel={placeCopyApi.writeFirst}
-          saveLabel="Save Place"
-          savedLabel="Saved"
-          saved={saved}
           bottomInset={insets.bottom}
           onWrite={() => router.push(`/write?placeId=${data.id}`)}
-          onToggleSave={() => setSaved((value) => !value)}
         />
       )}
 

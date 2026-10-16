@@ -103,6 +103,22 @@ export async function blockUser(userId: string) {
   return unwrap(await api(`/api/friends/block/${userId}`, { method: 'POST' }));
 }
 
+export interface BlockedEntry {
+  user: SlimUser;
+  /** ISO-8601 */
+  blockedAt: string;
+}
+
+/**
+ * People the viewer has blocked. Necessary rather than convenient: blocking
+ * makes the other person's profile 404, so there is no profile left on which to
+ * offer an unblock control. This is the only observable place that state exists.
+ */
+export async function listBlockedUsers(): Promise<BlockedEntry[]> {
+  const { data } = await unwrapWithMeta<BlockedEntry[]>(await api('/api/friends/blocked'));
+  return data;
+}
+
 export async function unblockUser(userId: string) {
   return unwrap(await api(`/api/friends/block/${userId}`, { method: 'DELETE' }));
 }

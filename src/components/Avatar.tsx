@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Image } from 'react-native';
 
 import { absoluteUrl } from '@/api/session';
@@ -48,8 +49,12 @@ type AvatarProps = {
  */
 export function Avatar({ user, size = 32, ringColor, ringWidth = 0, tintOverride }: AvatarProps) {
   const uri = absoluteUrl(user.avatarPath);
+  // A path that resolves but 404s, or a URL the device cannot reach, would
+  // otherwise leave a blank circle. Sticky rather than per-render, so a failing
+  // image does not retry on every parent re-render.
+  const [imageFailed, setImageFailed] = useState(false);
 
-  if (uri) {
+  if (uri && !imageFailed) {
     return (
       <Image
         source={{ uri }}
@@ -62,6 +67,7 @@ export function Avatar({ user, size = 32, ringColor, ringWidth = 0, tintOverride
         }}
         accessibilityIgnoresInvertColors
         accessibilityLabel={`${user.name}'s avatar`}
+        onError={() => setImageFailed(true)}
       />
     );
   }

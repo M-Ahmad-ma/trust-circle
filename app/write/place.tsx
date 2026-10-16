@@ -13,57 +13,102 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { placesApi } from '@/api';
+import { placesApi, experiencesApi } from '@/api';
 import type { WirePlace } from '@/api/types';
 import { FlowHeader } from '@/components/write/FlowHeader';
 import { STEP_ROUTES, useExperienceDraft } from '@/lib/experienceDraft';
+import { useUserLocation } from '@/lib/useUserLocation';
 import { writeCopy } from '@/data';
 import { photo } from '@/theme/photoMap';
 
-/** Peshawar — the centre used when the user has not granted location. */
-const DEFAULT_CENTER = { lat: 34.015, lng: 71.58 };
-
 export default function PlaceStep() {
   const insets = useSafeAreaInsets();
-  const { draft, dispatch } = useExperienceDraft();
-  const { placeId } = useLocalSearchParams<{ placeId: string }>();
+  const { draft, dispatch, beginEdit } = useExperienceDraft();
+  const { placeId, editId } = useLocalSearchParams<{ placeId: string; editId: string }>();
+
+  // Same hook as Explore: place search is "near me" too, and hardcoding Peshawar
+  // here made the write flow unable to find anywhere else.
+  const location = useUserLocation();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<WirePlace[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [seedError, setSeedError] = useState<string | null>(null);
+
+  /**
+   * Amending an existing experience seeds the whole draft from it, which is why
+   * this step is where it happens: it is the entry point of the flow, so the
+   * draft is populated before the user can reach a later step.
+   *
+   * Seeded exactly once per `editId`. Without that guard the effect would
+   * re-fire on every re-render and quietly overwrite edits the user had already
+   * made in the other steps.
+   */
+  const seededRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!editId || seededRef.current === editId) return;
+    seededRef.current = editId;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const experience = await experiencesApi.getExperience(editId);
+        if (cancelled) return;
+        beginEdit(experience);
+      } catch {
+        if (cancelled) return;
+        // Leave `editing` null so this stays a blank "new experience" draft the
+        // user can still use, rather than a half-seeded one they might publish.
+        setSeedError(writeCopy.editExperienceFailed);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editId, beginEdit]);
 
   // Arriving from a place page means the place is already decided.
+  // Skipped when seeding an edit: `beginEdit` already set the real place, and
+  // this would otherwise race it and overwrite the edit's place with a param.
   useEffect(() => {
-    if (placeId) dispatch({ type: 'setPlace', placeId });
-  }, [placeId, dispatch]);
+    if (placeId && !editId) dispatch({ type: 'setPlace', placeId });
+  }, [placeId, editId, dispatch]);
 
   // Debounced server search. Debouncing matters here — each keystroke would
   // otherwise be a round trip, and the server fuzzy-matches on every call.
   const requestRef = useRef(0);
 
-  const runSearch = useCallback(async (term: string) => {
-    const ticket = ++requestRef.current;
-    setLoading(true);
-    setError(null);
+  const runSearch = useCallback(
+    async (term: string) => {
+      const ticket = ++requestRef.current;
+      setLoading(true);
+      setError(null);
 
-    try {
-      const result = await placesApi.searchPlaces({
-        q: term.trim() || undefined,
-        lat: DEFAULT_CENTER.lat,
-        lng: DEFAULT_CENTER.lng,
-        radius: 20000,
-        limit: 25,
-      });
+      try {
+        const result = await placesApi.searchPlaces({
+          q: term.trim() || undefined,
+          lat: location.coords.lat,
+          lng: location.coords.lng,
+          radius: 20000,
+          limit: 25,
+        });
 
-      // Drop responses that a newer keystroke has already superseded.
-      if (ticket === requestRef.current) setResults(result.places);
-    } catch {
-      if (ticket === requestRef.current) setError(writeCopy.placeSearchFailed);
-    } finally {
-      if (ticket === requestRef.current) setLoading(false);
-    }
-  }, []);
+        // Drop responses that a newer keystroke has already superseded.
+        if (ticket === requestRef.current) setResults(result.places);
+      } catch {
+        if (ticket === requestRef.current) setError(writeCopy.placeSearchFailed);
+      } finally {
+        if (ticket === requestRef.current) setLoading(false);
+      }
+      // Re-runs when the fix lands, so the list re-scopes from the Peshawar
+      // fallback to wherever the user actually is.
+    },
+    [location.coords.lat, location.coords.lng]
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -126,6 +171,19 @@ export default function PlaceStep() {
               )}
             </View>
           </View>
+
+          {/* The seed failing is worse than a failed search: the user asked to
+              edit something and would otherwise be dropped into a blank draft
+              that looks like a new experience. */}
+          {seedError ? (
+            <View className="mt-6 px-5">
+              <View className="rounded-card bg-rose-100 p-4">
+                <Text className="font-body text-[12px] leading-[18px] text-primary-700">
+                  {seedError}
+                </Text>
+              </View>
+            </View>
+          ) : null}
 
           {error ? (
             <View className="mt-6 px-5">

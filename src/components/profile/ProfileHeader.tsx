@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { ProfileAddFriend } from '@/components/profile/ProfileAddFriend';
+import { ProfileBlockUser } from '@/components/profile/ProfileBlockUser';
 import { ProfileRemoveFriend } from '@/components/profile/ProfileRemoveFriend';
 import { RelationshipBadge } from '@/components/write/Relationship';
 import type { Relationship } from '@/api/types';
@@ -20,6 +21,8 @@ type ProfileHeaderProps = {
   editLabel: string;
   onEdit: () => void;
   onBecameFriend?: () => void;
+  /** Called after a successful block — the profile is about to become a 404. */
+  onBlocked?: () => void;
 };
 
 export function ProfileHeader({
@@ -33,6 +36,7 @@ export function ProfileHeader({
   editLabel,
   onEdit,
   onBecameFriend,
+  onBlocked,
 }: ProfileHeaderProps) {
   return (
     <View className="bg-paper-50">
@@ -89,6 +93,12 @@ export function ProfileHeader({
           relationship={relationship}
           onBecameFriend={onBecameFriend}
         />
+      )}
+
+      {/* Everyone but yourself. Block is last and quiet — a safety control, not
+          a primary action, and directly under the fold invites accidents. */}
+      {!isSelf && (
+        <ProfileBlockUser userId={userId} userName={name} onBlocked={onBlocked ?? (() => {})} />
       )}
     </View>
   );

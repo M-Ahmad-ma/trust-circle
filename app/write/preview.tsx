@@ -21,7 +21,7 @@ type PublishError =
 
 export default function PreviewStep() {
   const insets = useSafeAreaInsets();
-  const { draft, dispatch, reset } = useExperienceDraft();
+  const { draft, dispatch, reset, editing } = useExperienceDraft();
 
   const [publishing, setPublishing] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
@@ -40,9 +40,13 @@ export default function PreviewStep() {
   const uploadedCount = draft.photos.filter((photo) => photo.uploadId).length;
 
   /**
-   * Two-step publish per API.md §4: upload each photo to get an id, then create
+   * Two-step save per API.md §4: upload each new photo to get an id, then write
    * the experience referencing those ids. Already-uploaded photos keep their id,
-   * so a failed create can be retried without re-uploading.
+   * so a failed save can be retried without re-uploading.
+   *
+   * The same path serves create and amend — they differ only in which verb is
+   * used and in whether removed photos need deleting, so they share one routine
+   * rather than two copies that can drift.
    */
   const publish = async () => {
     if (!ready) return;
@@ -72,20 +76,40 @@ export default function PreviewStep() {
         photoIds.push(uploaded.id);
       }
 
-      setProgress(writeCopy.creatingExperience);
+      setProgress(editing ? writeCopy.savingExperience : writeCopy.creatingExperience);
 
-      const created = await experiencesApi.createExperience({
-        placeId: draft.placeId as string,
+      const fields = {
         // Must be a JSON number, not a string.
         rating,
         reviewText: draft.reviewText.trim(),
         visitedAt: draft.visitedAt as string,
         visibility: draft.visibility as NonNullable<typeof draft.visibility>,
-        photoIds: photoIds.length > 0 ? photoIds : undefined,
-      });
+        photoIds: photoIds.length > 0 ? photoIds : [],
+      };
+
+      const saved = editing
+        ? await experiencesApi.updateExperience(editing.id, fields)
+        : await experiencesApi.createExperience({ placeId: draft.placeId as string, ...fields });
+
+      // The PATCH detaches photos left out of `photoIds` but does not delete
+      // them (API.md §4 — they stay owned and reusable), so an edit that removed
+      // a photo would leave it alive and invisible. Deleting is the only way the
+      // user's removal actually happens. Failures here are non-fatal: the edit
+      // itself already landed, and a stranded photo is recoverable.
+      if (editing) {
+        const kept = new Set(photoIds);
+        const removed = editing.originalPhotoIds.filter((id) => !kept.has(id));
+        for (const photoId of removed) {
+          try {
+            await uploadsApi.deletePhoto(photoId);
+          } catch {
+            // Deliberately swallowed — see above.
+          }
+        }
+      }
 
       reset();
-      router.replace({ pathname: '/experience/[id]', params: { id: created.id } });
+      router.replace({ pathname: '/experience/[id]', params: { id: saved.id } });
     } catch (caught) {
       setError(toPublishError(caught));
     } finally {
@@ -150,10 +174,10 @@ export default function PreviewStep() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 130 }}>
         <View className="px-5 pt-8">
           <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-            {writeCopy.previewEyebrow}
+            {editing ? writeCopy.editEyebrow : writeCopy.previewEyebrow}
           </Text>
           <Text className="mt-2.5 font-display text-[24px] leading-[30px] text-ink-900">
-            {writeCopy.previewTitle}
+            {editing ? writeCopy.editTitle : writeCopy.previewTitle}
           </Text>
           <Text className="mt-2 max-w-[320px] font-body text-[12.5px] leading-[18px] text-ink-500">
             {writeCopy.previewSubtitle}
@@ -274,7 +298,12 @@ export default function PreviewStep() {
           <Text
             className="font-body-semibold text-[15px]"
             style={{ color: publishing ? '#f3ecdd' : '#fdfaf4' }}>
-            {progress ?? (publishing ? writeCopy.publishing : writeCopy.publish)}
+            {progress ??
+              (publishing
+                ? writeCopy.publishing
+                : editing
+                  ? writeCopy.saveChanges
+                  : writeCopy.publish)}
           </Text>
           {!publishing && <MaterialCommunityIcons name="check" size={17} color="#fdfaf4" />}
         </Pressable>

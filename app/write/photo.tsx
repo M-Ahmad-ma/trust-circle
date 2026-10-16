@@ -146,7 +146,9 @@ export default function PhotoStep() {
               className="mt-3 grow-0"
               contentContainerStyle={{ gap: 8 }}>
               {draft.photos.map((photo: DraftPhoto, index) => (
-                <View key={`${photo.localUri}-${index}`} className="overflow-hidden rounded-card">
+                <View
+                  key={`${photo.photoId ?? photo.localUri}-${index}`}
+                  className="overflow-hidden rounded-card">
                   <Image
                     source={{ uri: photo.localUri }}
                     style={{ width: TILE, height: TILE }}
@@ -167,12 +169,32 @@ export default function PhotoStep() {
                       </Text>
                     </View>
                   )}
+
+                  {/* Reordering is explicit rather than drag-based: these tiles
+                      live inside a horizontal ScrollView, where a drag gesture
+                      has to fight the scroll for every pixel, and a long-press
+                      reorder that misfires silently reorders the user's photos.
+                      Arrows cannot be ambiguous about what they did. */}
+                  <View className="absolute bottom-1.5 right-1.5 flex-row overflow-hidden rounded-pill bg-ink-900/70">
+                    <ReorderButton
+                      icon="chevron-left"
+                      label={writeCopy.movePhotoEarlier(index + 1)}
+                      disabled={index === 0}
+                      onPress={() => dispatch({ type: 'movePhoto', from: index, to: index - 1 })}
+                    />
+                    <ReorderButton
+                      icon="chevron-right"
+                      label={writeCopy.movePhotoLater(index + 1)}
+                      disabled={index === draft.photos.length - 1}
+                      onPress={() => dispatch({ type: 'movePhoto', from: index, to: index + 1 })}
+                    />
+                  </View>
                 </View>
               ))}
             </ScrollView>
 
             <Text className="mt-2.5 font-body text-[10.5px] text-ink-400">
-              {writeCopy.uploadOnPublish}
+              {writeCopy.photoOrderHint}
             </Text>
           </View>
         )}
@@ -235,6 +257,32 @@ export default function PhotoStep() {
 }
 
 const TILE = 104;
+
+function ReorderButton({
+  icon,
+  label,
+  disabled,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  label: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      hitSlop={4}
+      className="h-6 w-7 items-center justify-center active:opacity-60"
+      style={{ opacity: disabled ? 0.3 : 1 }}>
+      <MaterialCommunityIcons name={icon} size={15} color="#fdfaf4" />
+    </Pressable>
+  );
+}
 
 function ActionRow({
   icon,

@@ -639,6 +639,24 @@ Errors: `404 PLACE_NOT_FOUND`.
 
 Errors: `400 INVALID_NAME` · `400 VALIDATION_ERROR`.
 
+#### `PATCH /api/places/:id` — community correction
+
+```ts
+// body — every field optional, at least one required
+{ "name": "Bala Hisar Fort", "lat": 34.0152, "lng": 71.5806,
+  "category": "landmark" | null, "address": "…" | null, "city": "…" | null }
+```
+
+Corrections to a shared place are open to **any signed-in user**, not just
+`created_by` — same model as the open POST above. Omitted fields are left
+untouched; an explicit `null` clears the field. `lat` and `lng` must be sent
+together. Experiences are never modified.
+
+Returns `200 { "data": Place }`, re-read through the same viewer-aware projection
+as `GET /api/places/:id`, so `coverPhoto` and the counts match a refetch.
+
+Errors: `400 INVALID_NAME` · `400 VALIDATION_ERROR` · `404 PLACE_NOT_FOUND`.
+
 ---
 
 ### Experiences 🔒

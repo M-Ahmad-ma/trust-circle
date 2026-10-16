@@ -1,16 +1,33 @@
-import { createContext, useContext, useMemo, useReducer, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useReducer,
+  useState,
+  type ReactNode,
+} from 'react';
 
-import type { Visibility } from '@/api/types';
+import { absoluteUrl } from '@/api/session';
+import type { ExperienceDetail, Visibility } from '@/api/types';
 
 /**
  * A photo the user picked but that may not exist on the server yet. `uploadId`
  * is filled in as uploads succeed, so a failed publish can retry without
  * re-uploading — orphaned uploads stay owned by the user and are reusable
  * (API.md §4).
+ *
+ * When editing, a photo already attached to the experience arrives with
+ * `photoId` set and `uploadId` equal to it. That single fact is what lets publish
+ * tell "already on the server, keep it" from "new, upload it first", and lets it
+ * work out which photos the edit *removed* so they can actually be deleted
+ * rather than silently orphaned.
  */
 export type DraftPhoto = {
   localUri: string;
   uploadId?: string;
+  /** Set only for photos that already belong to the experience being edited. */
+  photoId?: string;
   name: string;
   type: string;
 };
@@ -66,11 +83,13 @@ type Action =
   | { type: 'setPlace'; placeId: string }
   | { type: 'addPhoto'; photo: DraftPhoto }
   | { type: 'removePhotoAt'; index: number }
+  | { type: 'movePhoto'; from: number; to: number }
   | { type: 'markUploaded'; index: number; uploadId: string }
   | { type: 'setRating'; rating: number }
   | { type: 'setReviewText'; reviewText: string }
   | { type: 'setVisitedAt'; visitedAt: string }
   | { type: 'setVisibility'; visibility: Visibility }
+  | { type: 'load'; draft: ExperienceDraft }
   | { type: 'reset' };
 
 function reducer(state: ExperienceDraft, action: Action): ExperienceDraft {
@@ -82,6 +101,19 @@ function reducer(state: ExperienceDraft, action: Action): ExperienceDraft {
       return { ...state, photos: [...state.photos, action.photo] };
     case 'removePhotoAt':
       return { ...state, photos: state.photos.filter((_, i) => i !== action.index) };
+    case 'movePhoto': {
+      const { from, to } = action;
+      // Out-of-range moves come from stale index math in the photo grid when a
+      // tile is removed mid-press; ignoring them beats producing a hole.
+      if (from === to) return state;
+      if (from < 0 || from >= state.photos.length) return state;
+      if (to < 0 || to >= state.photos.length) return state;
+
+      const photos = [...state.photos];
+      const [moved] = photos.splice(from, 1);
+      photos.splice(to, 0, moved);
+      return { ...state, photos };
+    }
     case 'markUploaded':
       return {
         ...state,
@@ -97,6 +129,8 @@ function reducer(state: ExperienceDraft, action: Action): ExperienceDraft {
       return { ...state, visitedAt: action.visitedAt };
     case 'setVisibility':
       return { ...state, visibility: action.visibility };
+    case 'load':
+      return action.draft;
     case 'reset':
       return { ...emptyDraft };
     default:
@@ -140,16 +174,63 @@ type DraftContextValue = {
   draft: ExperienceDraft;
   dispatch: (action: Action) => void;
   reset: () => void;
+  /** Non-null while amending an existing experience rather than writing a new one. */
+  editing: EditingState | null;
+  /** Seeds the draft from a stored experience. Overwrites whatever was in it. */
+  beginEdit: (experience: ExperienceDetail) => void;
+};
+
+/**
+ * Everything needed to reconcile an edit against what is already on the server.
+ * `originalPhotoIds` is the part that cannot be derived from the draft later: by
+ * the time publish runs, the removed photos are gone from the draft and nothing
+ * left in it says they ever existed.
+ */
+export type EditingState = {
+  id: string;
+  originalPhotoIds: string[];
 };
 
 const DraftContext = createContext<DraftContextValue | null>(null);
 
 export function ExperienceDraftProvider({ children }: { children: ReactNode }) {
   const [draft, dispatch] = useReducer(reducer, emptyDraft);
+  const [editing, setEditing] = useState<EditingState | null>(null);
+
+  const reset = useCallback(() => {
+    dispatch({ type: 'reset' });
+    setEditing(null);
+  }, []);
+
+  const beginEdit = useCallback((experience: ExperienceDetail) => {
+    dispatch({
+      type: 'load',
+      draft: {
+        placeId: experience.place.id,
+        rating: experience.rating,
+        reviewText: experience.review,
+        visitedAt: experience.visitedAt,
+        visibility: experience.visibility,
+        photos: experience.photos.map((photo) => ({
+          // Already on the server: `uploadId === photoId` is what stops publish
+          // re-uploading it, and `localUri` is the resolved display URL.
+          localUri: absoluteUrl(photo.url) ?? '',
+          uploadId: photo.id,
+          photoId: photo.id,
+          name: photo.url,
+          type: 'image/jpeg',
+        })),
+      },
+    });
+    setEditing({
+      id: experience.id,
+      originalPhotoIds: experience.photos.map((photo) => photo.id),
+    });
+  }, []);
 
   const value = useMemo<DraftContextValue>(
-    () => ({ draft, dispatch, reset: () => dispatch({ type: 'reset' }) }),
-    [draft]
+    () => ({ draft, dispatch, reset, editing, beginEdit }),
+    [draft, reset, editing, beginEdit]
   );
 
   return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>;

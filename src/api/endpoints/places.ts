@@ -62,3 +62,17 @@ export async function createPlace(input: CreatePlaceInput): Promise<CreatedPlace
     created: (meta?.created as boolean | undefined) ?? response.status === 201,
   };
 }
+
+/**
+ * Every field is optional, but `lat` and `lng` are a pair — the server rejects
+ * one without the other (a half-moved point is not a location). An omitted field
+ * is left untouched; an explicit `null` clears it.
+ */
+export type UpdatePlaceInput = Partial<Omit<CreatePlaceInput, 'lat' | 'lng'>> & {
+  lat?: number;
+  lng?: number;
+};
+
+export async function updatePlace(id: string, input: UpdatePlaceInput): Promise<WirePlace> {
+  return unwrap<WirePlace>(await api(`/api/places/${id}`, { method: 'PATCH', json: input }));
+}

@@ -96,7 +96,7 @@ export function ProfileScreen({
         settingsLabel="Settings"
         topInset={insets.top}
         onBack={onBack}
-        onSettings={onOpenSettings ?? (() => { })}
+        onSettings={onOpenSettings ?? (() => router.push('/settings'))}
       />
 
       <ScrollView
@@ -134,6 +134,10 @@ export function ProfileScreen({
             editLabel="Edit Profile"
             onEdit={onEditProfile ?? (() => router.push('/profile/edit'))}
             onBecameFriend={profile.refetch}
+            // A blocked profile 404s, so refetching would replace a real screen
+            // with the "Profile unavailable" empty state and read like a failure.
+            // Leaving is the truthful outcome.
+            onBlocked={onBack}
           />
         )}
 
@@ -167,9 +171,9 @@ export function ProfileScreen({
                 body={profileCopyApi.noExperiencesBody}
                 {...(isSelf
                   ? {
-                    actionLabel: profileCopyApi.writeFirst,
-                    onAction: () => router.navigate('/write/place'),
-                  }
+                      actionLabel: profileCopyApi.writeFirst,
+                      onAction: () => router.navigate('/write/place'),
+                    }
                   : {})}
               />
             )}

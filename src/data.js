@@ -36,7 +36,7 @@ export const writeCopy = {
   continueLabel: 'Continue',
   choosePlaceFirst: 'Choose a place first',
   continueFrom: (name) => `Continue from ${name}`,
-  searchPlaces: 'Search places in Peshawar',
+  searchPlaces: 'Search places near you',
   cantFindPlace: 'It may not be on Trust Circle yet.',
   addNewPlace: 'Add a new place',
   photoHint:
@@ -50,6 +50,9 @@ export const writeCopy = {
   removeAll: 'Remove all',
   removeAllPhotos: 'Remove all photos',
   removePhoto: (n) => `Remove photo ${n}`,
+  movePhotoEarlier: (n) => `Move photo ${n} earlier`,
+  movePhotoLater: (n) => `Move photo ${n} later`,
+  photoOrderHint: 'The first photo is the cover. Use the arrows on a photo to change its order.',
   pickerBlocked:
     'Photo access is off, so the picker cannot open. Enable it in Settings, or add one of ours below.',
   cameraBlocked: 'Camera access is off. Enable it in Settings, or choose from your library.',
@@ -89,6 +92,12 @@ export const writeCopy = {
   noPhotosYet: 'None yet',
   publish: 'Publish experience',
   publishing: 'Publishing…',
+  editEyebrow: 'Edit experience',
+  editTitle: 'Change what you said.',
+  saveChanges: 'Save changes',
+  savingExperience: 'Saving…',
+  editExperienceFailed:
+    'That experience could not be opened for editing. You can write a new one instead.',
   previewIncomplete: 'Something is missing from your experience.',
   startOver: 'Discard and start over',
   clearSearch: 'Clear search',
@@ -150,11 +159,23 @@ export const experienceCopy = {
   visited: 'Visited',
   originalPhotos: 'original photos',
   viewPlace: 'View place',
+  edit: 'Edit',
+  delete: 'Delete',
+  deleting: 'Deleting…',
+  deleteCancel: 'Keep it',
+  deleteAction: 'Delete',
+  deleteConfirmTitle: 'Delete this experience?',
+  deleteConfirmBody:
+    'Your write-up of {place}, its rating and its photos are removed for everyone. This cannot be undone.',
 };
 
 export const exploreCopy = {
   eyebrow: 'Explore',
   title: 'Peshawar',
+  // Shown instead of the city name once we have a real fix. Reverse geocoding
+  // would need a second permission and a network round trip to name a street we
+  // do not know either, so the honest label is "near you" rather than a guess.
+  titleNearYou: 'Near you',
   searchPlaceholder: 'Search places, people or experiences…',
   noBio: 'No bio yet.',
   loadingPlaces: 'Looking around nearby…',
@@ -169,6 +190,15 @@ export const exploreCopy = {
   averageRating: 'Average rating',
   viewPlace: 'View place',
   place: 'Place',
+  openExperience: 'Open experience',
+  placesLayer: 'Places',
+  experiencesLayer: 'Experiences',
+  layerToggleLabel: 'Map layers',
+  loadingExperiences: 'Finding experiences near you…',
+  experiencesFailed: 'We could not load experiences nearby.',
+  noExperiencesTitle: 'No experiences here yet',
+  noExperiencesBody:
+    'Nobody you can see has written about anywhere within 20 km. Write the first one.',
 };
 
 export const circleCopyApi = {
@@ -240,6 +270,13 @@ export const profileCopyApi = {
     'You will need to sign in again to post, and your Circle requests waiting for you stay where they are.',
   signOutConfirmAction: 'Sign out',
   signOutCancel: 'Stay signed in',
+  blockUser: 'Block this person',
+  blockSelf: 'You cannot block yourself.',
+  blockCancel: 'Keep them',
+  blockConfirmAction: 'Block',
+  blockConfirmTitle: 'Block this person?',
+  blockConfirmBody:
+    '{name} will not be able to find you, send you requests, or see anything you share. If they are in your Circle, this removes them from it. You can undo this later in Settings.',
 };
 
 export const placeCopyApi = {
@@ -252,6 +289,19 @@ export const placeCopyApi = {
   experienceCount: (n) => `${n} experiences you can see`,
   avgRating: (r) => `${r.toFixed(1)} average`,
   openExperience: 'Open experience',
+  editPlace: 'Edit place',
+  editPlaceEyebrow: 'Edit place',
+  editPlaceHint:
+    'Places are shared, so anyone can correct the details. Experiences written about this place are left alone.',
+  editPlaceNameLabel: 'Place name',
+  editPlaceNameRequired: 'A place needs a name.',
+  editPlaceCategoryLabel: 'Category',
+  editPlaceAddressLabel: 'Address',
+  editPlaceCityLabel: 'City',
+  savePlaceChanges: 'Save changes',
+  editPlaceFailed: 'Those changes could not be saved. Try again in a moment.',
+  editPlaceMissing: 'This place no longer exists.',
+  saving: 'Saving…',
 };
 
 export const peopleCopy = {
@@ -269,5 +319,25 @@ export const peopleCopy = {
   theySentYouRequest: 'They have already sent you a request — accept it from your Circle screen.',
   cannotRequest: 'That request could not be sent.',
   blocked: 'You cannot connect with this person.',
+  blockFailed: 'That person could not be blocked. Try again in a moment.',
   requestFailed: 'That request could not be sent. Try again in a moment.',
+};
+
+export const settingsCopy = {
+  title: 'Settings',
+  back: 'Go back',
+  loading: 'Loading…',
+  cancel: 'Cancel',
+  blockedPeople: 'Blocked people',
+  blockedHint: 'People you blocked. Unblocking restores their profile to you.',
+  blockedFailed: 'We could not load your blocked list.',
+  noBlockedTitle: 'Nobody blocked',
+  noBlockedBody:
+    'People you block are hidden from you, and their profile disappears from your view.',
+  blockedOn: 'Blocked',
+  unblock: 'Unblock',
+  unblockFailed: 'That person could not be unblocked. Try again in a moment.',
+  unblockTitle: 'Unblock this person?',
+  unblockBody:
+    '{name} will be able to see their profile again, and anything they shared with your Circle goes back to being scoped by visibility.',
 };

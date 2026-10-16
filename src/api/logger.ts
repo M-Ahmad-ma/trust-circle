@@ -138,6 +138,7 @@ export const log = {
   session: createLogger('session'),
   upload: createLogger('upload'),
   query: createLogger('query'),
+  location: createLogger('location'),
 };
 
 export function getLogEntries(): LogEntry[] {

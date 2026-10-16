@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import type { ComponentProps } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -28,6 +28,7 @@ export default function ExperienceScreen() {
   const insets = useSafeAreaInsets();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [retryKey, setRetryKey] = useState(0);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -50,6 +51,50 @@ export default function ExperienceScreen() {
       cancelled = true;
     };
   }, [id, retryKey]);
+
+  /**
+   * Amending reuses the write flow rather than a second, thinner form: the same
+   * validation, the same photo handling, one place to keep correct.
+   *
+   * Only the id travels in the route, not the record. `ExperienceDraftProvider`
+   * is scoped to `/write` — it owns one in-progress draft and is destroyed when
+   * the flow is dismissed — so this screen is deliberately outside it and cannot
+   * seed it. The flow fetches and seeds itself on arrival, which also means a
+   * deep link into `/write/place?editId=…` works the same as a tap here.
+   */
+  const startEdit = () => {
+    if (state.kind !== 'ready') return;
+    router.push({ pathname: '/write/place', params: { editId: state.experience.id } });
+  };
+
+  const runDelete = async () => {
+    setDeleting(true);
+    try {
+      await experiencesApi.deleteExperience(id);
+      // The experience no longer exists anywhere, so there is nothing to show it
+      // on. Back to the map is the only honest destination.
+      router.dismissTo('/');
+    } catch {
+      setDeleting(false);
+    }
+  };
+
+  const confirmDelete = () => {
+    const name = state.kind === 'ready' ? state.experience.place.name : '';
+    Alert.alert(
+      experienceCopy.deleteConfirmTitle,
+      experienceCopy.deleteConfirmBody.replace('{place}', name),
+      [
+        { text: experienceCopy.deleteCancel, style: 'cancel' },
+        {
+          text: experienceCopy.deleteAction,
+          style: 'destructive',
+          onPress: () => void runDelete(),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   return (
     <View className="flex-1 bg-paper-100">
@@ -123,7 +168,12 @@ export default function ExperienceScreen() {
 
       {state.kind === 'ready' && (
         <>
-          <ExperienceBody experience={state.experience} />
+          <ExperienceBody
+            experience={state.experience}
+            onEdit={startEdit}
+            onDelete={confirmDelete}
+            deleting={deleting}
+          />
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
             accessibilityRole="button"
@@ -139,8 +189,23 @@ export default function ExperienceScreen() {
   );
 }
 
-function ExperienceBody({ experience }: { experience: ExperienceDetail }) {
+function ExperienceBody({
+  experience,
+  onEdit,
+  onDelete,
+  deleting,
+}: {
+  experience: ExperienceDetail;
+  onEdit: () => void;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
   const { place, reviewer, relationship } = experience;
+
+  // Only the author may amend or delete. `relationship.type === 'self'` is the
+  // server's own verdict for this viewer, so the controls cannot appear for
+  // someone who merely has read access.
+  const isOwner = relationship.type === 'self';
 
   // absoluteUrl returns null for anything unresolvable; drop those rather than
   // handing Image a null uri.
@@ -223,6 +288,35 @@ function ExperienceBody({ experience }: { experience: ExperienceDetail }) {
             {experienceCopy.viewPlace}
           </Text>
         </Pressable>
+
+        {isOwner && (
+          <View className="mt-4 flex-row gap-3">
+            <Pressable
+              onPress={onEdit}
+              accessibilityRole="button"
+              accessibilityLabel={experienceCopy.edit}
+              className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-hairline active:opacity-70">
+              <MaterialCommunityIcons name="pencil-outline" size={15} color="#6b6058" />
+              <Text className="font-body-semibold text-[13px] text-ink-700">
+                {experienceCopy.edit}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={onDelete}
+              disabled={deleting}
+              accessibilityRole="button"
+              accessibilityLabel={experienceCopy.delete}
+              accessibilityState={{ disabled: deleting, busy: deleting }}
+              className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-danger-500 active:opacity-70"
+              style={{ opacity: deleting ? 0.5 : 1 }}>
+              <MaterialCommunityIcons name="trash-can-outline" size={15} color="#a03246" />
+              <Text className="font-body-semibold text-[13px] text-danger-600">
+                {deleting ? experienceCopy.deleting : experienceCopy.delete}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </ScrollView>
   );

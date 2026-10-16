@@ -639,7 +639,7 @@ Errors: `404 PLACE_NOT_FOUND`.
 
 Errors: `400 INVALID_NAME` · `400 VALIDATION_ERROR`.
 
-#### `PATCH /api/places/:id` — community correction
+#### `PATCH /api/places/:id` — creator-only correction
 
 ```ts
 // body — every field optional, at least one required
@@ -647,15 +647,28 @@ Errors: `400 INVALID_NAME` · `400 VALIDATION_ERROR`.
   "category": "landmark" | null, "address": "…" | null, "city": "…" | null }
 ```
 
-Corrections to a shared place are open to **any signed-in user**, not just
-`created_by` — same model as the open POST above. Omitted fields are left
-untouched; an explicit `null` clears the field. `lat` and `lng` must be sent
-together. Experiences are never modified.
+**Only the user who created the place may PATCH it** (`403 NOT_PLACE_OWNER`
+otherwise). Creating is open to anyone, but rewriting a venue someone else
+entered is not a correction — on a graph built on trust, letting any stranger
+rename a place is vandalism. The creator is the only person with standing to say
+what a place is called.
+
+Omitted fields are left untouched; an explicit `null` clears the field. `lat` and
+`lng` must be sent together. Experiences are never modified.
 
 Returns `200 { "data": Place }`, re-read through the same viewer-aware projection
 as `GET /api/places/:id`, so `coverPhoto` and the counts match a refetch.
 
-Errors: `400 INVALID_NAME` · `400 VALIDATION_ERROR` · `404 PLACE_NOT_FOUND`.
+`GET /api/places/:id` also carries **`canEdit: boolean`** — true only for the
+creator. Drive the edit affordance from it; it is a capability, not a `createdBy`
+id, and who added a place is not broadcast to every reader. It is absent from
+search/nearby, which is where the edit control does not appear.
+
+`places.created_by` is `ON DELETE SET NULL`, so a place whose creator deleted
+their account is editable by nobody (`canEdit: false`) — left wrong rather than
+handed to whoever asks.
+
+Errors: `400 INVALID_NAME` · `400 VALIDATION_ERROR` · `403 NOT_PLACE_OWNER` · `404 PLACE_NOT_FOUND`.
 
 ---
 

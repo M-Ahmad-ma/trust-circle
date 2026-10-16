@@ -30,7 +30,7 @@ export function ExploreLayerToggle({
 
   return (
     <View
-      className="absolute left-3 top-16 rounded-pill bg-paper-50 p-1"
+      className="absolute left-3 top-16 rounded-xl bg-paper-50 p-1"
       style={{
         shadowColor: '#1c1815',
         shadowOpacity: 0.12,
@@ -48,7 +48,7 @@ export function ExploreLayerToggle({
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
             accessibilityLabel={labels[value]}
-            className="rounded-pill px-3 py-1.5"
+            className="rounded-xl px-3 py-1.5"
             style={{ backgroundColor: active ? '#1c1815' : 'transparent' }}>
             <Text
               className={

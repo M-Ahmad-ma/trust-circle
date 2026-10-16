@@ -67,6 +67,13 @@ export interface WirePlace {
    * Two viewers can legitimately receive different covers for the same place.
    */
   coverPhoto?: string | null;
+  /**
+   * Detail only. True when the viewer added this place and may therefore
+   * `PATCH` it. A capability rather than a `createdBy` id — the client only
+   * needs to know whether to offer the edit affordance, and who added a place
+   * is nobody else's business.
+   */
+  canEdit?: boolean;
 }
 
 /** Everything needed to place the pin — present on both Place and card.place. */

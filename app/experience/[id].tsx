@@ -221,11 +221,11 @@ function ExperienceBody({
   const { width: screenWidth } = useWindowDimensions();
   const photoWidth = screenWidth - 24;
 
-  console.log(place, "place")
-  console.log(reviewer, "review")
-  console.log("experience", experience)
+  console.log(place, 'place');
+  console.log(reviewer, 'review');
+  console.log('experience', experience);
 
-  console.log(resolvedPhotos[0].uri)
+  console.log(resolvedPhotos[0].uri);
 
   return (
     <ScrollView

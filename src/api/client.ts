@@ -63,10 +63,19 @@ export async function api(
 
   if (response.status >= 400) {
     const code = await peekErrorCode(response);
-    log.response.error(`${method} ${path} → ${response.status} ${code ?? 'UNKNOWN'}`, {
+
+    // A 401 we are still able to act on is a warning, not a failure. It was
+    // logged at `error` before the recovery logic ran, so a token that expired
+    // and refreshed cleanly a moment later still showed up in the log viewer as
+    // a red 401 and read like a broken session.
+    const recoverable = response.status === 401 && !retried && code === 'INVALID_TOKEN';
+    const report = recoverable ? log.response.warn : log.response.error;
+
+    report(`${method} ${path} → ${response.status} ${code ?? 'UNKNOWN'}`, {
       durationMs,
       method,
       path,
+      ...(recoverable ? { recovering: true } : {}),
     });
   }
 

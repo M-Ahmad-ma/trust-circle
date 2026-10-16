@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 
 import { ApiRequestError } from './errors';
 import { log } from './logger';
-import type { ApiErrorBody, AuthSession, AuthUser } from './types';
+import type { ApiErrorBody, AuthSession } from './types';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 
@@ -196,23 +196,4 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   }
 
   return (payload as { data: T }).data;
-}
-
-export async function fetchMe(): Promise<AuthUser> {
-  const response = await fetch(`${BASE_URL}/api/users/me`, {
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-  });
-
-  const payload = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new ApiRequestError(
-      response.status,
-      (payload as ApiErrorBody | null) ?? {
-        error: { code: 'INTERNAL_ERROR', message: `Request failed (${response.status})` },
-      }
-    );
-  }
-
-  return (payload as { data: { user: AuthUser } }).data.user;
 }

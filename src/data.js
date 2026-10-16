@@ -116,10 +116,20 @@ export const writeCopy = {
   uploadOnPublish:
     'Photos upload when you publish, so a failed publish never re-uploads what already worked.',
   newPlaceEyebrow: 'New place',
-  newPlaceHint: 'Add the details you know. Location can be rough — it can be corrected later.',
+  newPlaceHint: 'Add the details you know. Location can be rough — you can correct it later.',
+  newPlaceHintStandalone:
+    'Add the details you know. You can write your experience about it afterwards.',
+  useMyLocation: 'Use my location',
+  locating: 'Finding you…',
+  locationRequired: 'Tap “Use my location”, or type the coordinates.',
+  locationUnavailable: 'We do not know where you are yet — tap to turn on location.',
+  locationUnavailableSettings:
+    'Location is off for Trust Circle. Enable it in Settings, or type the coordinates.',
+  locationOff: 'Open location settings',
   newPlaceNameRequired: 'A place needs a name.',
   newPlaceNameLabel: 'Place name',
   newPlaceCategoryLabel: 'Category',
+  newPlaceCategoryHint: 'Optional. Anything works — cafe, museum, rooftop bar, swimming pool.',
   newPlaceAddressLabel: 'Address',
   newPlaceCityLabel: 'City',
   addPlace: 'Add place',
@@ -301,6 +311,12 @@ export const placeCopyApi = {
   savePlaceChanges: 'Save changes',
   editPlaceFailed: 'Those changes could not be saved. Try again in a moment.',
   editPlaceMissing: 'This place no longer exists.',
+  alreadyExistsNote:
+    'Someone already added a place like this one, so we opened theirs instead of creating a duplicate.',
+  notPlaceOwnerTitle: 'This place is not yours to edit',
+  notPlaceOwnerBody:
+    'Only the person who added a place can change its name, address or location. If something here is wrong, tell the person who added it.',
+  viewPlace: 'View place',
   saving: 'Saving…',
 };
 

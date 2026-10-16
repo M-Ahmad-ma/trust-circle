@@ -37,6 +37,7 @@ type Form = {
  */
 export default function EditPlaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const insets = useSafeAreaInsets();
 
   const place = useApiQuery<WirePlace>(() => placesApi.getPlace(id), {
     key: `place:${id}`,
@@ -61,6 +62,49 @@ export default function EditPlaceScreen() {
   }
 
   if (!place.data) return null;
+
+  // Only the creator may amend. Reached by deep link, or by an edit button that
+  // was on screen before someone else's change landed. Saying so here is better
+  // than letting the user fill in a form and fail on save.
+  if (place.data.canEdit !== true) {
+    return (
+      <View className="flex-1 bg-paper-100">
+        <View
+          className="flex-row items-center justify-between px-5"
+          style={{ paddingTop: insets.top + 8 }}>
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
+            accessibilityRole="button"
+            accessibilityLabel={placeCopyApi.back}
+            hitSlop={10}
+            className="h-9 w-9 items-center justify-center rounded-pill active:opacity-60">
+            <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
+          </Pressable>
+          <Text className="font-body-semibold text-3xs uppercase text-ink-400">
+            {placeCopyApi.editPlaceEyebrow}
+          </Text>
+          <View className="h-9 w-9" />
+        </View>
+
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-center font-display text-[20px] text-ink-900">
+            {placeCopyApi.notPlaceOwnerTitle}
+          </Text>
+          <Text className="mt-3 text-center font-body text-[12.5px] leading-[19px] text-ink-500">
+            {placeCopyApi.notPlaceOwnerBody}
+          </Text>
+          <Pressable
+            onPress={() => router.replace({ pathname: '/place/[id]', params: { id } })}
+            accessibilityRole="button"
+            className="mt-6 h-11 items-center justify-center rounded-card border border-primary-600 px-6 active:bg-rose-100">
+            <Text className="font-body-semibold text-[13px] text-primary-600">
+              {placeCopyApi.viewPlace}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   return <PlaceForm place={place.data} />;
 }
@@ -129,6 +173,8 @@ function PlaceForm({ place }: { place: WirePlace }) {
     } catch (error) {
       if (hasCode(error, 'PLACE_NOT_FOUND')) {
         setNotice(placeCopyApi.editPlaceMissing);
+      } else if (hasCode(error, 'NOT_PLACE_OWNER')) {
+        setNotice(placeCopyApi.notPlaceOwnerBody);
       } else if (hasCode(error, 'INVALID_NAME')) {
         setErrors({ name: 'The name needs a letter or number.' });
       } else {

@@ -24,6 +24,7 @@ export type ApiErrorCode =
   | 'NOT_FOUND'
   | 'USER_NOT_FOUND'
   | 'PLACE_NOT_FOUND'
+  | 'NOT_PLACE_OWNER'
   | 'EXPERIENCE_NOT_FOUND'
   | 'REQUEST_NOT_FOUND'
   | 'NOT_FRIENDS'

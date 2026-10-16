@@ -18,7 +18,7 @@ import { placeCopyApi } from '@/data';
 import { useApiQuery } from '@/lib/useApiQuery';
 
 export default function PlaceDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, deduped } = useLocalSearchParams<{ id: string; deduped?: string }>();
   const insets = useSafeAreaInsets();
 
   const fetchPlace = useCallback(() => placesApi.getPlace(id), [id]);
@@ -66,6 +66,17 @@ export default function PlaceDetailScreen() {
           </View>
         )}
 
+        {data && deduped === '1' && (
+          // The server fuzzy-matched the new place onto this existing one.
+          // Without this the user would read the screen as "I added this place".
+          <View className="mx-4 mt-4 flex-row gap-2.5 rounded-card bg-surface p-4">
+            <MaterialCommunityIcons name="link-variant" size={15} color="#6b6058" />
+            <Text className="flex-1 font-body text-[11.5px] leading-[17px] text-ink-500">
+              {placeCopyApi.alreadyExistsNote}
+            </Text>
+          </View>
+        )}
+
         {data && (
           <>
             <PlaceHero coverPhoto={data.coverPhoto} />
@@ -88,18 +99,20 @@ export default function PlaceDetailScreen() {
               </Text>
             )}
 
-            {/* Corrections are open to any signed-in user, matching the open
-                POST — so this is not gated on ownership. */}
-            <Pressable
-              onPress={() => router.push(`/place/${data.id}/edit`)}
-              accessibilityRole="button"
-              accessibilityLabel={placeCopyApi.editPlace}
-              className="ml-4 mt-3 flex-row items-center gap-1.5 self-start rounded-pill bg-surface px-3 py-1.5 active:opacity-70">
-              <MaterialCommunityIcons name="pencil-outline" size={13} color="#6b6058" />
-              <Text className="font-body-medium text-[11.5px] text-ink-600">
-                {placeCopyApi.editPlace}
-              </Text>
-            </Pressable>
+            {/* Only the person who added the place can correct it, so the
+                server sends `canEdit` and the button follows it. */}
+            {data.canEdit === true && (
+              <Pressable
+                onPress={() => router.push(`/place/${data.id}/edit`)}
+                accessibilityRole="button"
+                accessibilityLabel={placeCopyApi.editPlace}
+                className="ml-4 mt-3 flex-row items-center gap-1.5 self-start rounded-pill bg-surface px-3 py-1.5 active:opacity-70">
+                <MaterialCommunityIcons name="pencil-outline" size={13} color="#6b6058" />
+                <Text className="font-body-medium text-[11.5px] text-ink-600">
+                  {placeCopyApi.editPlace}
+                </Text>
+              </Pressable>
+            )}
 
             <View className="mt-7 px-4">
               <View className="flex-row items-baseline justify-between">

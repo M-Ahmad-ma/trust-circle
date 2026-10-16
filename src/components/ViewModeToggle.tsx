@@ -23,7 +23,7 @@ export function ViewModeToggle({ mode, onModeChange }: ViewModeToggleProps) {
   return (
     <View className="absolute inset-x-0 top-3 items-center">
       <View
-        className="flex-row rounded-pill bg-paper-50 p-1"
+        className="flex-row rounded-xl bg-paper-50 p-1"
         style={{
           shadowColor: '#1c1815',
           shadowOpacity: 0.12,
@@ -40,7 +40,7 @@ export function ViewModeToggle({ mode, onModeChange }: ViewModeToggleProps) {
               onPress={() => onModeChange(value)}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              className="rounded-pill px-4 py-2"
+              className="rounded-xl px-4 py-1.5"
               style={{ backgroundColor: active ? '#1c1815' : 'transparent' }}>
               <Text
                 className={

@@ -101,7 +101,6 @@ export default function ExploreScreen() {
     setRecenterToken((token) => token + 1);
   };
 
-
   return (
     <Screen className="bg-paper-100" edges={['top']}>
       <View className="mt-4 flex grow-0 flex-row items-end justify-between">
@@ -120,6 +119,21 @@ export default function ExploreScreen() {
       </View>
 
       <SearchField value={query} placeholder={exploreCopy.searchPlaceholder} onChange={setQuery} />
+
+      {/* Always visible, not tucked into an empty state. The `EmptyState` below
+          only mounts when the query returns nothing, so a user whose city has
+          places in it — which is everyone but a brand-new account on a new city —
+          had no way to add one at all. */}
+      <Pressable
+        onPress={() => router.push({ pathname: '/write/new-place', params: { standalone: '1' } })}
+        accessibilityRole="button"
+        accessibilityLabel={exploreCopy.addAPlace}
+        className="mt-2.5 flex-row items-center justify-center gap-2 rounded-card border border-dashed border-sand-400 py-3 active:opacity-70">
+        <MaterialCommunityIcons name="plus" size={15} color="#a03246" />
+        <Text className="font-body-semibold text-[12px] text-primary-600">
+          {exploreCopy.addAPlace}
+        </Text>
+      </Pressable>
 
       <LocationBanner
         status={location.status}
@@ -145,7 +159,13 @@ export default function ExploreScreen() {
             title={layer === 'places' ? exploreCopy.noPlacesTitle : exploreCopy.noExperiencesTitle}
             body={layer === 'places' ? exploreCopy.noPlacesBody : exploreCopy.noExperiencesBody}
             actionLabel={exploreCopy.addAPlace}
-            onAction={() => router.push('/write/new-place')}
+            // Standalone too: this button also lives on Explore, so it must not
+            // drop the user into the review flow. The experiences-layer empty
+            // state shares this action, and "add a place" is the right next step
+            // there as well — you cannot review a place that does not exist.
+            onAction={() =>
+              router.push({ pathname: '/write/new-place', params: { standalone: '1' } })
+            }
           />
         )}
 

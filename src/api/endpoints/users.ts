@@ -1,5 +1,4 @@
 import { api, unwrap, unwrapWithMeta } from '../client';
-import { fetchMe } from '../session';
 import type {
   AuthUser,
   ExperienceCard,
@@ -11,8 +10,19 @@ import type {
   UserSuggestion,
 } from '../types';
 
-export function me(): Promise<AuthUser> {
-  return fetchMe();
+/**
+ * Goes through `api()` rather than a bare fetch so it gets the same treatment as
+ * every other authenticated call: refresh-and-retry on an expired token, and
+ * session clearing when that fails.
+ *
+ * It used to call a hand-rolled `fetchMe()` in `session.ts` that did none of
+ * that. On a 15-minute expiry that meant the map and the experience feed
+ * recovered transparently while this one threw — so reopening the app showed a
+ * working map with "we could not load your profile" and no avatar.
+ */
+export async function me(): Promise<AuthUser> {
+  const { user } = await unwrap<{ user: AuthUser }>(await api('/api/users/me'));
+  return user;
 }
 
 export async function getUser(id: string): Promise<UserProfile> {

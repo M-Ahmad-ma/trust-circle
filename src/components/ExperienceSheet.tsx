@@ -40,8 +40,7 @@ export function ExperienceSheet({
     .map((photo) => ({ id: photo.id, uri: absoluteUrl(photo.url) }))
     .filter((photo): photo is { id: string; uri: string } => photo.uri !== null);
 
-
-  console.log(experience, "experience")
+  console.log(experience, 'experience');
 
   return (
     <View className="bg-paper-100 px-4 pb-5 pt-3">

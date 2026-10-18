@@ -7,27 +7,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { placesApi } from '@/api';
 import { hasCode } from '@/api/errors';
 import { AuthField } from '@/components/auth/AuthField';
+import { PlaceLocationPicker } from '@/components/PlaceLocationPicker';
 import { useExperienceDraft } from '@/lib/experienceDraft';
-import { useUserLocation } from '@/lib/useUserLocation';
+import { useUserLocation, type Coords } from '@/lib/useUserLocation';
 import { writeCopy } from '@/data';
 
 /** Server cap for `category` — mirrored client-side to avoid a round trip. */
 const CATEGORY_MAX = 60;
 
 /**
- * Coordinates are held as text, not numbers. A number field cannot represent
- * "not set yet" — the previous version prefilled Peshawar's coordinates, so a
- * new account anywhere else created its place at the wrong point on the map and
- * could not see it on their own Explore screen. Empty is the honest default and
- * "Use my location" fills it in one tap.
+ * No `lat`/`lng` fields at all. Coordinates come from the map — your own fix, a
+ * dragged pin, or a search result — because asking a person to type decimal
+ * degrees is not a thing anyone does. The previous version prefilled Peshawar,
+ * so a new account elsewhere created its place at the wrong point and could not
+ * see it on its own Explore screen.
  */
 type Form = {
   name: string;
   category: string;
   address: string;
   city: string;
-  lat: string;
-  lng: string;
 };
 
 export default function NewPlaceStep() {
@@ -49,9 +48,10 @@ export default function NewPlaceStep() {
     category: '',
     address: '',
     city: '',
-    lat: '',
-    lng: '',
   });
+
+  /** Chosen on the map, or null while the pin has not been placed. */
+  const [coords, setCoords] = useState<Coords | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -60,24 +60,6 @@ export default function NewPlaceStep() {
   const set = <K extends keyof Form>(key: K, value: Form[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: '' }));
-  };
-
-  /**
-   * Fills the coordinates from a real fix, or asks for one. When the OS will no
-   * longer prompt there is nothing to ask for, so it routes to Settings rather
-   * than appearing to do nothing.
-   */
-  const useMyLocation = () => {
-    if (location.isFallback) {
-      if (location.canAskAgain) location.request();
-      else location.openSettings();
-      return;
-    }
-
-    // Six decimals is ~10 cm — finer than any consumer GPS, and enough that
-    // rounding can never move someone else's place.
-    set('lat', location.coords.lat.toFixed(6));
-    set('lng', location.coords.lng.toFixed(6));
   };
 
   const validate = () => {
@@ -94,22 +76,18 @@ export default function NewPlaceStep() {
     if (form.category.trim().length > CATEGORY_MAX)
       next.category = `That category is too long — ${CATEGORY_MAX} characters at most.`;
 
-    const lat = Number.parseFloat(form.lat);
-    const lng = Number.parseFloat(form.lng);
-
-    if (form.lat.trim() === '') next.lat = writeCopy.locationRequired;
-    else if (Number.isNaN(lat) || lat < -90 || lat > 90)
-      next.lat = 'Latitude must be between -90 and 90.';
-
-    if (form.lng.trim() === '') next.lng = writeCopy.locationRequired;
-    else if (Number.isNaN(lng) || lng < -180 || lng > 180)
-      next.lng = 'Longitude must be between -180 and 180.';
-
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
   const save = async () => {
+    // Coordinates come from the map, and there is no text field to type them
+    // into, so this gate is new — and it must block, because the server would
+    // otherwise reject the whole form after it looked filled in.
+    if (!coords) {
+      setNotice(writeCopy.locationRequired);
+      return;
+    }
     if (!validate()) return;
 
     setSaving(true);
@@ -118,8 +96,8 @@ export default function NewPlaceStep() {
     try {
       const result = await placesApi.createPlace({
         name: form.name.trim(),
-        lat: Number.parseFloat(form.lat),
-        lng: Number.parseFloat(form.lng),
+        lat: coords.lat,
+        lng: coords.lng,
         category: form.category || null,
         address: form.address.trim() || null,
         city: form.city.trim() || null,
@@ -150,13 +128,6 @@ export default function NewPlaceStep() {
     }
   };
 
-  const locationLabel =
-    location.status === 'requesting'
-      ? writeCopy.locating
-      : location.isFallback && !location.canAskAgain
-        ? writeCopy.locationOff
-        : writeCopy.useMyLocation;
-
   return (
     <View className="flex-1 bg-paper-100">
       <KeyboardAvoidingView
@@ -179,6 +150,30 @@ export default function NewPlaceStep() {
           </Text>
           <View className="h-9 w-9" />
         </View>
+
+        {/*
+          Pinned above the scrolling form on purpose. A Map inside a vertical
+          ScrollView loses the vertical gesture to the parent — the map then pans
+          horizontally but not vertically, which reads as a broken map. Keeping it
+          outside the ScrollView hands it the gesture outright.
+        */}
+        <PlaceLocationPicker
+          value={coords}
+          onChange={setCoords}
+          center={location.coords}
+          userLocation={location}
+          onPickResult={(result) => {
+            // Fill only what the user has not already typed. The gazetteer knows
+            // the city and the kind of place better than an empty form does, but
+            // overwriting a deliberate edit would be rude.
+            setForm((current) => ({
+              ...current,
+              name: current.name || result.name,
+              city: current.city || result.city || current.city,
+              category: current.category || result.category || current.category,
+            }));
+          }}
+        />
 
         <ScrollView
           className="flex-1"
@@ -232,52 +227,6 @@ export default function NewPlaceStep() {
               placeholder="Peshawar"
               autoCapitalize="words"
             />
-
-            <View className="gap-2.5">
-              {/* Location is the one field a person cannot know by heart, so it
-                  gets a button rather than making them type a decimal degree. */}
-              <Pressable
-                onPress={useMyLocation}
-                accessibilityRole="button"
-                accessibilityLabel={locationLabel}
-                className="flex-row items-center justify-center gap-2 rounded-card border border-dashed border-sand-400 py-3 active:opacity-70">
-                <MaterialCommunityIcons name="crosshairs-gps" size={16} color="#a03246" />
-                <Text className="font-body-semibold text-[12.5px] text-primary-600">
-                  {locationLabel}
-                </Text>
-              </Pressable>
-
-              {location.isFallback && (
-                <Text className="font-body text-[11px] leading-[17px] text-ink-400">
-                  {location.canAskAgain
-                    ? writeCopy.locationUnavailable
-                    : writeCopy.locationUnavailableSettings}
-                </Text>
-              )}
-            </View>
-
-            <View className="flex-row gap-4">
-              <View className="flex-1">
-                <AuthField
-                  label="Latitude"
-                  value={form.lat}
-                  onChangeText={(text) => set('lat', text)}
-                  error={errors.lat || null}
-                  placeholder="34.0152"
-                  keyboardType="numbers-and-punctuation"
-                />
-              </View>
-              <View className="flex-1">
-                <AuthField
-                  label="Longitude"
-                  value={form.lng}
-                  onChangeText={(text) => set('lng', text)}
-                  error={errors.lng || null}
-                  placeholder="71.5806"
-                  keyboardType="numbers-and-punctuation"
-                />
-              </View>
-            </View>
           </View>
 
           {/* API dedup note — the honest version of why this form warns you. */}

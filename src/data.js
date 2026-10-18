@@ -25,6 +25,8 @@ export const authCopy = {
   termsLabel: 'I agree to keep reviews honest, and to only claim places I have actually been to.',
   invalidCredentials: 'That email and password do not match an account.',
   loginFailed: 'We could not sign you in just now. Try again in a moment.',
+  serverUnreachable:
+    'We could not reach the server. Check that the API is running and the address in .env is right.',
   emailTaken: 'That email already has an account. Sign in instead?',
   registerFailed: 'We could not create your account just now. Try again in a moment.',
 };
@@ -201,6 +203,9 @@ export const exploreCopy = {
   viewPlace: 'View place',
   place: 'Place',
   openExperience: 'Open experience',
+  tapForReview: 'Tap for the full review',
+  expandReview: 'Show more or less of the review',
+  collapseSheet: 'Collapse and show the map',
   placesLayer: 'Places',
   experiencesLayer: 'Experiences',
   layerToggleLabel: 'Map layers',

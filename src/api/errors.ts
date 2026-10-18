@@ -35,6 +35,15 @@ export type ApiErrorCode =
   | 'REQUEST_ALREADY_SENT'
   | 'REQUEST_ALREADY_RECEIVED'
   | 'UNSUPPORTED_TYPE'
+  /**
+   * Client-side only — the server never sends this. `fetch` itself threw, so the
+   * request never completed: wrong host, server not running, no route, TLS
+   * failure. Nothing was ever judged, which is exactly why it must not be
+   * shown to a user as "your details were wrong".
+   */
+  | 'NETWORK_ERROR'
+  /** Nominatim unreachable or rate-limited; the search box must say so, not fail silently. */
+  | 'GEOCODER_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 /** Thrown by every helper in `endpoints/`. Carries the status for branching. */
@@ -59,6 +68,14 @@ export function isApiError(error: unknown): error is ApiRequestError {
 /** Narrow to one code without needing a cast at every call site. */
 export function hasCode(error: unknown, code: ApiErrorCode): boolean {
   return isApiError(error) && error.code === code;
+}
+
+/**
+ * True when the request never reached the server. Distinct from a rejection,
+ * which means the server did answer and said no.
+ */
+export function isNetworkError(error: unknown): boolean {
+  return isApiError(error) && error.code === 'NETWORK_ERROR';
 }
 
 type ValidationDetail = { path: string; message: string };

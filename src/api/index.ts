@@ -7,4 +7,5 @@ export * as placesApi from './endpoints/places';
 export * as experiencesApi from './endpoints/experiences';
 export * as uploadsApi from './endpoints/uploads';
 export * as exploreApi from './endpoints/explore';
+export * as geocodingApi from './endpoints/geocoding';
 export * as usersApi from './endpoints/users';

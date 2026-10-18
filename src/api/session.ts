@@ -176,24 +176,61 @@ export function refreshSession(): Promise<boolean> {
   return inFlightRefresh;
 }
 
-/** Raw JSON POST used only by the auth endpoints, which need no bearer token. */
+/**
+ * Raw JSON POST used only by the auth endpoints, which need no bearer token.
+ *
+ * Unlike `api()`, this used to be completely silent — a failed sign-in left no
+ * trace in the Network log at all, so an unreachable server was
+ * indistinguishable from a wrong password. It now logs the URL it dialled and
+ * the code it got back, and reports a `fetch` failure as `NETWORK_ERROR` so the
+ * UI can say "cannot reach the server" instead of blaming the user's password.
+ *
+ * The body is deliberately never logged. `api()` can log its payloads because
+ * `redact()` strips credential-shaped keys, but auth bodies are the one place
+ * where a plain mistake would put a password in a log ring buffer.
+ */
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  const url = `${BASE_URL}${path}`;
+  log.request.info(`${path} →`, { url });
 
-  const payload = await response.json().catch(() => null);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    // `fetch` only throws when nothing came back at all — DNS, refused
+    // connection, unreachable host, TLS. The server never judged anything, so
+    // this must not surface as a credential problem.
+    const reason = error instanceof Error ? error.message : String(error);
+    log.request.error(`${path} — could not reach ${BASE_URL}`, { error: reason });
+    throw new ApiRequestError(0, {
+      error: {
+        code: 'NETWORK_ERROR',
+        message: `Could not reach the server at ${BASE_URL}`,
+        details: { url, reason },
+      },
+    });
+  }
+
+  const payload = (await response.json().catch(() => null)) as ApiErrorBody | null;
+  const code = payload?.error?.code;
+
+  log.response.info(`${path} → ${response.status}${code ? ` ${code}` : ''}`, {
+    status: response.status,
+    ...(code ? { code } : {}),
+  });
 
   if (!response.ok) {
     throw new ApiRequestError(
       response.status,
-      (payload as ApiErrorBody | null) ?? {
+      payload ?? {
         error: { code: 'INTERNAL_ERROR', message: `Request failed (${response.status})` },
       }
     );
   }
 
-  return (payload as { data: T }).data;
+  return (payload as unknown as { data: T }).data;
 }

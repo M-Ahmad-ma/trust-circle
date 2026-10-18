@@ -36,22 +36,33 @@ export async function api(
 
   const startedAt = Date.now();
   const form = json !== undefined ? JSON.stringify(json) : formBody;
+  const url = `${apiBaseUrl()}${path}`;
+
+  log.request.info(`${method} ${path} →`, { url });
 
   let response: Response;
   try {
-    response = await fetch(`${apiBaseUrl()}${path}`, {
+    response = await fetch(url, {
       method,
       headers,
       body: form,
       signal,
     });
   } catch (error) {
-    // Network-level failure: no response at all.
+    // Network-level failure: no response at all. Wrapped rather than rethrown so
+    // callers can tell "the server never answered" from "the server said no" —
+    // they surface completely different copy to the user.
     log.response.error(`${method} ${path} — network failure`, {
       durationMs: Date.now() - startedAt,
       error: error instanceof Error ? error.message : String(error),
     });
-    throw error;
+    throw new ApiRequestError(0, {
+      error: {
+        code: 'NETWORK_ERROR',
+        message: `Could not reach the server at ${apiBaseUrl()}`,
+        details: { url },
+      },
+    });
   }
 
   const durationMs = Date.now() - startedAt;

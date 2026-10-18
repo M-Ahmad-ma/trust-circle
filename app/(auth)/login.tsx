@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 
 import { authApi } from '@/api';
-import { fieldErrors, hasCode } from '@/api/errors';
+import { fieldErrors, hasCode, isNetworkError } from '@/api/errors';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,7 +37,10 @@ export default function LoginScreen() {
       await authApi.login(email.trim(), password);
       router.replace('/(tabs)');
     } catch (error) {
-      if (hasCode(error, 'INVALID_CREDENTIALS')) {
+      if (isNetworkError(error)) {
+        // The server never answered, so nothing here is about these details.
+        setServerError(authCopy.serverUnreachable);
+      } else if (hasCode(error, 'INVALID_CREDENTIALS')) {
         // Same message for unknown email and wrong password, by design — do not
         // leak which one it was.
         setServerError(authCopy.invalidCredentials);
@@ -49,8 +52,6 @@ export default function LoginScreen() {
       setBusy(false);
     }
   };
-
-  console.log(serverError);
 
   return (
     <View className="flex-1 bg-paper-100">

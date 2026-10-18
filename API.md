@@ -735,6 +735,42 @@ Owner only (`403 NOT_OWNER`); attached photo **files are deleted from disk**.
 
 ---
 
+### Geocoding 🔒
+
+#### `GET /api/geocode?q&lat&lng&limit`
+
+Forward geocoding for the add-a-place flow. A place that does not exist yet cannot
+be found in `/api/places/search`, so this proxies **OpenStreetMap Nominatim** — no
+API key, and the same project that serves the map tiles.
+
+```ts
+?q=coffee&lat=34.015&lng=71.58&limit=5
+```
+
+`q` 2–200 chars. **`lat` and `lng` are required.** Results are scoped to a ~9 km
+viewbox around them (`viewbox` + `bounded=1`), hard-filtered rather than biased.
+
+| Response | |
+|---|---|
+| `200` | `{ "data": [{ id, name, displayName, lat, lng, category, city }] }` |
+| `503` | `GEOCODER_UNAVAILABLE` — upstream down, rate-limited, or timed out |
+
+**Why the centre is required.** An unbounded Nominatim query ranks by global
+importance, and for the names this app deals with that is actively harmful:
+`Bala Hisar` returns a shop in **Haryana, India**. A user who trusted it would
+create their local fort in the wrong country. Scoped to the map being looked at,
+the same query returns **nothing** — the honest answer — and the user places the
+pin by tapping the map instead.
+
+Proxied server-side because Nominatim requires a `User-Agent` identifying the
+application and caps callers at **1 request/second**; both are enforced here
+(`GEOCODING_USER_AGENT`, plus a 1.1 s spacing gate).
+
+Free endpoint, no SLA. A production deployment should point `GEOCODING_BASE_URL`
+at a contracted provider rather than rely on the shared instance.
+
+---
+
 ### Uploads 🔒
 
 Two-step flow: **upload first**, then reference the returned `id` in `photoIds`.

@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { authApi } from '@/api';
-import { fieldErrors, hasCode } from '@/api/errors';
+import { fieldErrors, hasCode, isNetworkError } from '@/api/errors';
 
 import { AuthBackdrop, Rule } from '@/components/auth/AuthBackdrop';
 import { AuthButton, AuthLink, StepMarker } from '@/components/auth/AuthButton';
@@ -54,7 +54,10 @@ export default function RegisterScreen() {
       });
       router.replace('/(tabs)');
     } catch (error) {
-      if (hasCode(error, 'EMAIL_TAKEN')) {
+      if (isNetworkError(error)) {
+        // Never reached the server — not a problem with what was typed.
+        setServerError(authCopy.serverUnreachable);
+      } else if (hasCode(error, 'EMAIL_TAKEN')) {
         setServerError(authCopy.emailTaken);
       } else {
         const fields = fieldErrors(error);

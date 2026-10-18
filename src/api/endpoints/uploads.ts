@@ -1,3 +1,5 @@
+import { File } from 'expo-file-system';
+
 import { api, unwrap } from '../client';
 import { log } from '../logger';
 import type { Photo } from '../types';
@@ -15,8 +17,31 @@ export async function uploadPhoto(file: {
   type: string;
 }): Promise<UploadResult> {
   const form = new FormData();
-  // React Native's FormData takes this object shape for file parts.
-  form.append('file', file as unknown as Blob);
+
+  /**
+   * Not `{ uri, name, type }`, which is what React Native's legacy FormData
+   * wanted. Expo's fetch accepts only a string, a real Blob, or an object with
+   * `bytes()` — anything else throws "Unsupported FormDataPart implementation"
+   * before the request is ever sent, which is exactly what was happening.
+   *
+   * All three properties are load-bearing, because the server rejects a part
+   * missing any of them:
+   *   name → without a filename multer treats the part as a plain field and
+   *          `req.file` comes back undefined (NO_FILE)
+   *   type → `fileFilter` checks `file.mimetype` and answers 415 UNSUPPORTED_TYPE
+   *   bytes() → the only thing expo's fetch can actually read the file with
+   *
+   * `expo-file-system`'s `File` supplies `name` and `bytes()` but has no `type`
+   * at all, so the mime type is carried on this wrapper instead. The cast is
+   * honest: the part implements the contract expo's fetch documents, even though
+   * it is not a `Blob` instance.
+   */
+  const source = new File(file.uri);
+  form.append('file', {
+    name: file.name || source.name,
+    type: file.type,
+    bytes: () => source.bytes(),
+  } as unknown as Blob);
 
   log.upload.info('uploading photo', { name: file.name, type: file.type });
   const result = await unwrap<UploadResult>(await api('/api/uploads', { method: 'POST', form }));

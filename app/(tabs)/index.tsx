@@ -179,6 +179,7 @@ export default function ExploreScreen() {
                 selectedPlaceId={selectedPlace?.id ?? null}
                 selectedExperienceId={selectedExperience?.id ?? null}
                 center={center}
+                userLocation={location.isFallback ? null : location.coords}
                 onSelectPlace={setSelectedPlaceId}
                 onSelectExperience={setSelectedExperienceId}
                 recenterToken={recenterToken}

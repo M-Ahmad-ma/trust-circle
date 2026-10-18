@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ExperienceCard, WirePlace } from '@/api/types';
 import { ExperiencePinMarker } from '@/components/ExperiencePinMarker';
 import { PinMarker } from '@/components/PinMarker';
+import { UserLocationDot } from '@/components/UserLocationDot';
 import {
   attributionNotice,
   mapStyle,
@@ -26,6 +27,12 @@ type ExploreMapProps = {
   selectedExperienceId: string | null;
   /** Fallback centre when nothing is selected. */
   center: Coords;
+  /**
+   * Where the user actually is, or null when we are still guessing. Never pass
+   * the fallback here — a "you are here" dot over Peshawar for someone in
+   * Islamabad is precisely the lie the banner exists to prevent.
+   */
+  userLocation: Coords | null;
   onSelectPlace: (id: string) => void;
   onSelectExperience: (id: string) => void;
   /** Bumped to force a camera return to `center`; the map cannot do it itself. */
@@ -72,6 +79,7 @@ export function ExploreMap({
   selectedPlaceId,
   selectedExperienceId,
   center,
+  userLocation,
   onSelectPlace,
   onSelectExperience,
   recenterToken,
@@ -139,6 +147,14 @@ export function ExploreMap({
                 />
               </Marker>
             ))}
+
+        {/* Rendered last so it sits above the pins when a venue and the user
+            share a coordinate — the dot is the thing being looked for. */}
+        {userLocation && (
+          <Marker lngLat={[userLocation.lng, userLocation.lat]} anchor="center">
+            <UserLocationDot />
+          </Marker>
+        )}
       </Map>
 
       {/* The old "Map layers" button is gone rather than left inert: places and

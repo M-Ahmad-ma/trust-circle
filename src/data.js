@@ -27,6 +27,8 @@ export const authCopy = {
   loginFailed: 'We could not sign you in just now. Try again in a moment.',
   serverUnreachable:
     'We could not reach the server. Check that the API is running and the address in .env is right.',
+  serverDegraded:
+    'The server is up but its database is not right now. This is on us — please try again in a moment.',
   emailTaken: 'That email already has an account. Sign in instead?',
   registerFailed: 'We could not create your account just now. Try again in a moment.',
 };
@@ -198,14 +200,13 @@ export const exploreCopy = {
     'No places match this search within 20 km. Try a different name, or add the place yourself.',
   addAPlace: 'Add a place',
   writeExperience: 'Write an experience here',
+  // Short form for the half-width button next to "View place".
+  writeExperienceShort: 'Write',
   experiencesVisible: 'experiences you can see',
   averageRating: 'Average rating',
   viewPlace: 'View place',
   place: 'Place',
   openExperience: 'Open experience',
-  tapForReview: 'Tap for the full review',
-  expandReview: 'Show more or less of the review',
-  collapseSheet: 'Collapse and show the map',
   placesLayer: 'Places',
   experiencesLayer: 'Experiences',
   layerToggleLabel: 'Map layers',

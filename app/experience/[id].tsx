@@ -177,15 +177,23 @@ export default function ExperienceScreen() {
             onDelete={confirmDelete}
             deleting={deleting}
           />
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
-            accessibilityRole="button"
-            accessibilityLabel={experienceCopy.back}
-            hitSlop={10}
-            className="absolute left-4 h-9 w-9 items-center justify-center rounded-full bg-black/40 active:opacity-70"
-            style={{ top: insets.top + 58 }}>
-            <MaterialCommunityIcons name="arrow-left" color="white" size={20} />
-          </Pressable>
+
+          {/* The primary action is pinned rather than left at the end of the
+              scroll content: on a long review it sat below the fold, so
+              getting to the place meant scrolling past everything you had just
+              read. */}
+          <View
+            className="border-t border-hairline bg-paper-100 px-5 pt-3"
+            style={{ paddingBottom: insets.bottom + 12 }}>
+            <Pressable
+              onPress={() => router.push(`/place/${state.experience.place.id}`)}
+              accessibilityRole="button"
+              className="h-12 items-center justify-center rounded-card border border-primary-600 active:bg-rose-100">
+              <Text className="font-body-semibold text-[14px] text-primary-600">
+                {experienceCopy.viewPlace}
+              </Text>
+            </Pressable>
+          </View>
         </>
       )}
     </View>
@@ -225,7 +233,7 @@ function ExperienceBody({
     <ScrollView
       className="relative flex-1"
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 40 }}>
+      contentContainerStyle={{ paddingBottom: 24 }}>
       {resolvedPhotos.length > 0 && (
         // Height is pinned rather than left to the nested horizontal ScrollView
         // to derive from its content. A ScrollView does not report content size
@@ -248,10 +256,6 @@ function ExperienceBody({
           ))}
         </ScrollView>
       )}
-
-      <View className="absolute left-3 top-3">
-        <MaterialCommunityIcons name="arrow-left" color="white" size={18} />
-      </View>
 
       <View className="px-5 pt-6">
         <Text className="font-display text-[26px] leading-[32px] text-ink-900">{place.name}</Text>
@@ -297,17 +301,8 @@ function ExperienceBody({
           <Row icon="map-marker-outline" text={place.address ?? place.city ?? place.name} />
         </View>
 
-        <Pressable
-          onPress={() => router.push(`/place/${place.id}`)}
-          accessibilityRole="button"
-          className="mt-7 h-12 items-center justify-center rounded-card border border-primary-600 active:bg-rose-100">
-          <Text className="font-body-semibold text-[14px] text-primary-600">
-            {experienceCopy.viewPlace}
-          </Text>
-        </Pressable>
-
         {isOwner && (
-          <View className="mt-4 flex-row gap-3">
+          <View className="mt-6 flex-row gap-3">
             <Pressable
               onPress={onEdit}
               accessibilityRole="button"

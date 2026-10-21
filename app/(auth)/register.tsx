@@ -57,6 +57,8 @@ export default function RegisterScreen() {
       if (isNetworkError(error)) {
         // Never reached the server — not a problem with what was typed.
         setServerError(authCopy.serverUnreachable);
+      } else if (hasCode(error, 'DATABASE_UNAVAILABLE')) {
+        setServerError(authCopy.serverDegraded);
       } else if (hasCode(error, 'EMAIL_TAKEN')) {
         setServerError(authCopy.emailTaken);
       } else {

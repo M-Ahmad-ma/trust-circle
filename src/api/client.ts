@@ -13,6 +13,17 @@ export interface RequestOptions {
 }
 
 /**
+ * How long to wait for a response before giving up.
+ *
+ * `fetch` has no default timeout, so a server that accepts the connection but
+ * never answers leaves the request pending forever — the screen spins with no
+ * error and the user cannot tell whether to retry. Fifteen seconds is long
+ * enough for a slow query and short enough that a hung server surfaces as an
+ * error rather than an infinite wait.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
+
+/**
  * Fetch wrapper: attaches the bearer token and retries once after a refresh.
  *
  * A 401 is only retried for `INVALID_TOKEN`. `UNAUTHORIZED` (missing/malformed
@@ -46,21 +57,24 @@ export async function api(
       method,
       headers,
       body: form,
-      signal,
+      signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
     // Network-level failure: no response at all. Wrapped rather than rethrown so
     // callers can tell "the server never answered" from "the server said no" —
     // they surface completely different copy to the user.
-    log.response.error(`${method} ${path} — network failure`, {
+    const aborted = error instanceof Error && error.name === 'TimeoutError';
+    log.response.error(`${method} ${path} — ${aborted ? 'timed out' : 'network failure'}`, {
       durationMs: Date.now() - startedAt,
       error: error instanceof Error ? error.message : String(error),
     });
     throw new ApiRequestError(0, {
       error: {
         code: 'NETWORK_ERROR',
-        message: `Could not reach the server at ${apiBaseUrl()}`,
-        details: { url },
+        message: aborted
+          ? `The server at ${apiBaseUrl()} did not respond in time`
+          : `Could not reach the server at ${apiBaseUrl()}`,
+        details: { url, timedOut: aborted },
       },
     });
   }

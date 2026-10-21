@@ -44,6 +44,8 @@ export type ApiErrorCode =
   | 'NETWORK_ERROR'
   /** Nominatim unreachable or rate-limited; the search box must say so, not fail silently. */
   | 'GEOCODER_UNAVAILABLE'
+  /** The server's database is down — an outage, not the user's fault. */
+  | 'DATABASE_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 /** Thrown by every helper in `endpoints/`. Carries the status for branching. */

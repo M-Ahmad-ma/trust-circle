@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 
 import { absoluteUrl } from '@/api/session';
@@ -17,8 +16,7 @@ type ExperienceSheetProps = {
   onOpenReviewer: () => void;
 };
 
-/** Review text is clamped in the collapsed state; this is the unclamped cap. */
-const EXPANDED_REVIEW_LINES = 6;
+/** Thumbnail size for the photo strip, and how many thumbs fit before it wraps. */
 const THUMB = 52;
 const MAX_THUMBS = 4;
 
@@ -27,10 +25,10 @@ const MAX_THUMBS = 4;
  * sit at. Several reviews can share a coordinate, so a place summary cannot
  * represent what the user actually tapped.
  *
- * This is a sheet on top of a map, so every row it carries is map the user cannot
- * see. It therefore collapses to a single summary line, and the detail is one tap
- * away — being able to see the thing you are panning around matters more than
- * reading a review in place.
+ * This is a sheet on top of a map, so it covers map the user cannot see. It used
+ * to collapse to a single summary line and expand on tap, but that cost an extra
+ * tap to read the thing the marker was tapped for. The sheet now shows the
+ * review outright, and the map keeps whatever space is left.
  */
 export function ExperienceSheet({
   experience,
@@ -39,8 +37,6 @@ export function ExperienceSheet({
   onOpenReviewer,
 }: ExperienceSheetProps) {
   const { place, reviewer, relationship } = experience;
-  const [expanded, setExpanded] = useState(false);
-  const [reviewExpanded, setReviewExpanded] = useState(false);
 
   const distance =
     typeof place.distanceM === 'number'
@@ -97,26 +93,6 @@ export function ExperienceSheet({
     </View>
   );
 
-  if (!expanded) {
-    // One tap to see it all, one more to get the map back. This is the state the
-    // sheet spends most of its time in.
-    return (
-      <Pressable
-        onPress={() => setExpanded(true)}
-        accessibilityRole="button"
-        accessibilityLabel={`${place.name} by ${reviewer.name}, rated ${experience.rating}. Show more.`}
-        className="bg-paper-100 px-4 pb-3 pt-2.5 active:opacity-80">
-        <View className="h-1 w-9 self-center rounded-pill bg-sand-400" />
-        {titleRow}
-        {reviewerRow}
-        <View className="mt-2 flex-row items-center gap-1.5">
-          <Text className="font-body text-[11px] text-ink-400">{exploreCopy.tapForReview}</Text>
-          <MaterialCommunityIcons name="chevron-down" size={14} color="#b8a37c" />
-        </View>
-      </Pressable>
-    );
-  }
-
   return (
     <View className="bg-paper-100 px-4 pb-3 pt-2.5">
       <View className="h-1 w-9 self-center rounded-pill bg-sand-400" />
@@ -124,19 +100,11 @@ export function ExperienceSheet({
       {titleRow}
       {reviewerRow}
 
-      {/* The review is the point of this sheet, so it is clamped rather than
-          unbounded — the full text lives on the experience itself. */}
-      <Pressable
-        onPress={() => setReviewExpanded((current) => !current)}
-        accessibilityRole="button"
-        accessibilityLabel={exploreCopy.expandReview}
-        className="mt-2 active:opacity-70">
-        <Text
-          numberOfLines={reviewExpanded ? undefined : EXPANDED_REVIEW_LINES}
-          className="font-body text-[13.5px] leading-[20px] text-ink-700">
-          {experience.review}
-        </Text>
-      </Pressable>
+      {/* The review is the point of this sheet, so it is shown in full rather
+          than clamped behind a "show more" tap. */}
+      <Text className="mt-2 font-body text-[13.5px] leading-[20px] text-ink-700">
+        {experience.review}
+      </Text>
 
       {photos.length > 0 && <ScrollableThumbs photos={photos} onPress={onOpenExperience} />}
 
@@ -158,16 +126,6 @@ export function ExperienceSheet({
             {exploreCopy.openExperience}
           </Text>
           <MaterialCommunityIcons name="arrow-right" size={14} color="#fdfaf4" />
-        </Pressable>
-
-        {/* Collapse control sits with the actions rather than floating: the map
-            is what the user wants back, not a chrome button. */}
-        <Pressable
-          onPress={() => setExpanded(false)}
-          accessibilityRole="button"
-          accessibilityLabel={exploreCopy.collapseSheet}
-          className="h-11 w-11 items-center justify-center rounded-card border border-hairline active:opacity-70">
-          <MaterialCommunityIcons name="chevron-down" size={18} color="#6b6058" />
         </Pressable>
       </View>
     </View>

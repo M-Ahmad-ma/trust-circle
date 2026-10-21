@@ -218,6 +218,8 @@ export default function ExploreScreen() {
         />
       )}
 
+      {/* The sheet shows the review outright — it no longer collapses to a
+          one-line summary and expands on tap. */}
       {mode === 'map' && layer === 'experiences' && selectedExperience && (
         <ExperienceSheet
           experience={selectedExperience}
@@ -255,23 +257,13 @@ function PlaceSummary({
     <View className="bg-paper-100 px-4 pb-5 pt-3">
       <View className="h-1 w-10 self-center rounded-pill bg-sand-400" />
 
-      <View className="mt-3 flex-row items-start justify-between">
-        <View className="flex-1 pr-3">
-          <Text className="font-display text-[19px] leading-6 text-ink-800">{place.name}</Text>
-          <Text className="mt-1 font-body text-[12px] text-ink-500">
-            {place.category ?? exploreCopy.place}
-            {place.city ? ` · ${place.city}` : ''}
-            {distance ? ` · ${distance}` : ''}
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={onWrite}
-          accessibilityRole="button"
-          accessibilityLabel={exploreCopy.writeExperience}
-          className="h-9 w-9 items-center justify-center rounded-pill bg-surface active:opacity-70">
-          <MaterialCommunityIcons name="square-edit-outline" size={16} color="#6b6058" />
-        </Pressable>
+      <View className="mt-3">
+        <Text className="font-display text-[19px] leading-6 text-ink-800">{place.name}</Text>
+        <Text className="mt-1 font-body text-[12px] text-ink-500">
+          {place.category ?? exploreCopy.place}
+          {place.city ? ` · ${place.city}` : ''}
+          {distance ? ` · ${distance}` : ''}
+        </Text>
       </View>
 
       {/* `avgRating` is `number | null` — a place with no experiences you can see
@@ -296,14 +288,30 @@ function PlaceSummary({
         </View>
       )}
 
-      <Pressable
-        onPress={onOpen}
-        accessibilityRole="button"
-        className="mt-4 h-12 items-center justify-center rounded-card bg-primary-600 active:bg-primary-700">
-        <Text className="font-body-semibold text-[14px] text-primary-fg">
-          {exploreCopy.viewPlace}
-        </Text>
-      </Pressable>
+      <View className="mt-4 flex-row gap-3">
+        {/* The write shortcut used to be a lone round icon next to the place
+            name, which read as decoration rather than a button. It is a
+            labelled button now, sitting beside the one that opens the place. */}
+        <Pressable
+          onPress={onWrite}
+          accessibilityRole="button"
+          accessibilityLabel={exploreCopy.writeExperience}
+          className="h-12 flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-hairline active:opacity-70">
+          <MaterialCommunityIcons name="square-edit-outline" size={15} color="#6b6058" />
+          <Text className="font-body-semibold text-[14px] text-ink-700">
+            {exploreCopy.writeExperienceShort}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={onOpen}
+          accessibilityRole="button"
+          className="h-12 flex-1 items-center justify-center rounded-card bg-primary-600 active:bg-primary-700">
+          <Text className="font-body-semibold text-[14px] text-primary-fg">
+            {exploreCopy.viewPlace}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

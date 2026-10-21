@@ -40,6 +40,10 @@ export default function LoginScreen() {
       if (isNetworkError(error)) {
         // The server never answered, so nothing here is about these details.
         setServerError(authCopy.serverUnreachable);
+      } else if (hasCode(error, 'DATABASE_UNAVAILABLE')) {
+        // The server is up but its database is not. That is our outage, and
+        // telling the user to "try again shortly" beats blaming their input.
+        setServerError(authCopy.serverDegraded);
       } else if (hasCode(error, 'INVALID_CREDENTIALS')) {
         // Same message for unknown email and wrong password, by design — do not
         // leak which one it was.

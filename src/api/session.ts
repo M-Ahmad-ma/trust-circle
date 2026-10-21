@@ -199,18 +199,27 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      // `fetch` has no default timeout; a server that accepts the connection
+      // but never answers would otherwise leave the sign-in spinning forever.
+      signal: AbortSignal.timeout(15000),
     });
   } catch (error) {
     // `fetch` only throws when nothing came back at all — DNS, refused
-    // connection, unreachable host, TLS. The server never judged anything, so
-    // this must not surface as a credential problem.
+    // connection, unreachable host, TLS, or a timeout. The server never judged
+    // anything, so this must not surface as a credential problem.
     const reason = error instanceof Error ? error.message : String(error);
-    log.request.error(`${path} — could not reach ${BASE_URL}`, { error: reason });
+    const timedOut = error instanceof Error && error.name === 'TimeoutError';
+    log.request.error(
+      `${path} — ${timedOut ? 'timed out' : 'could not reach'} ${BASE_URL}`,
+      { error: reason }
+    );
     throw new ApiRequestError(0, {
       error: {
         code: 'NETWORK_ERROR',
-        message: `Could not reach the server at ${BASE_URL}`,
-        details: { url, reason },
+        message: timedOut
+          ? `The server at ${BASE_URL} did not respond in time`
+          : `Could not reach the server at ${BASE_URL}`,
+        details: { url, reason, timedOut },
       },
     });
   }

@@ -21,6 +21,17 @@ export const peshawarOverview = {
 export const PLACE_FOCUS_ZOOM = 17;
 
 /**
+ * Explore flies to a tapped pin a little wider than the picker does.
+ *
+ * `PLACE_FOCUS_ZOOM` frames a single venue, which is right when you are
+ * dropping a pin but claustrophobic when you are reading the map — the pin
+ * filled the screen and its neighbours were off it entirely. At 15 the frame is
+ * roughly 1.5 km across, so the place sits in its surroundings rather than
+ * alone in them.
+ */
+export const EXPLORE_FOCUS_ZOOM = 15;
+
+/**
  * Nudges the focal point below the viewport centre so the focused pin clears the
  * floating Map/List toggle and stays clear of the bottom chip.
  */

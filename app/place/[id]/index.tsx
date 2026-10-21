@@ -117,9 +117,6 @@ export default function PlaceDetailScreen() {
             <View className="mt-7 px-4">
               <View className="flex-row items-baseline justify-between">
                 <Text className="font-display-semibold text-[18px] text-ink-900">Experiences</Text>
-                <Text className="font-body text-[12px] text-ink-400">
-                  {experiences.data?.length ?? 0} shown
-                </Text>
               </View>
             </View>
 

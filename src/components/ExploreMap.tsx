@@ -10,9 +10,9 @@ import {
   attributionNotice,
   mapStyle,
   peshawarOverview,
+  EXPLORE_FOCUS_ZOOM,
   PLACE_FOCUS_DURATION,
   PLACE_FOCUS_PADDING,
-  PLACE_FOCUS_ZOOM,
 } from '@/theme/mapStyle';
 import type { Coords } from '@/lib/useUserLocation';
 
@@ -93,12 +93,12 @@ export function ExploreMap({
   // Exactly one of these is focused at a time, so the camera has a single truth.
   const focus =
     layer === 'places' && activePlace
-      ? { lng: activePlace.lng, lat: activePlace.lat, zoom: PLACE_FOCUS_ZOOM }
+      ? { lng: activePlace.lng, lat: activePlace.lat, zoom: EXPLORE_FOCUS_ZOOM }
       : layer === 'experiences' && activeExperience
         ? {
             lng: activeExperience.place.lng,
             lat: activeExperience.place.lat,
-            zoom: PLACE_FOCUS_ZOOM,
+            zoom: EXPLORE_FOCUS_ZOOM,
           }
         : { lng: center.lng, lat: center.lat, zoom: peshawarOverview.zoomLevel };
 

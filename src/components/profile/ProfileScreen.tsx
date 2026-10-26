@@ -14,9 +14,9 @@ import { ProfileTabs } from '@/components/profile/ProfileTabs';
 import { ExperienceRow } from '@/components/place/ExperienceRow';
 import { formatVisitDate } from '@/components/write/VisitCalendar';
 import { ProfileTopBar } from '@/components/profile/ProfileTopBar';
-import { profileCopyApi } from '@/data';
 import { useApiQuery } from '@/lib/useApiQuery';
 import type { ProfileTab } from '@/types';
+import { log } from '@/api/logger';
 
 type ProfileScreenProps = {
   userId: string;
@@ -39,7 +39,7 @@ export function ProfileScreen({
 
   const profile = useApiQuery<UserProfile>(() => usersApi.getUser(userId), {
     key: `profile:${userId}`,
-    errorMessage: profileCopyApi.failed,
+    errorMessage: 'We could not load your profile.',
     isEmpty: () => false,
   });
 
@@ -77,15 +77,28 @@ export function ProfileScreen({
     }
   };
 
+
+  console.log(profile, "profile data")
+  console.log("experience", experiences);
+  console.log(placesSeen, "place");
+  console.log(photoKeys, "photoKeys");
+
+
+
+
   const confirmSignOut = () => {
-    Alert.alert(profileCopyApi.signOutConfirmTitle, profileCopyApi.signOutConfirmBody, [
-      { text: profileCopyApi.signOutCancel, style: 'cancel' },
-      {
-        text: profileCopyApi.signOutConfirmAction,
-        style: 'destructive',
-        onPress: () => void signOut(),
-      },
-    ]);
+    Alert.alert(
+      'Sign out of Trust Circle?',
+      'You will need to sign in again to post, and your Circle requests waiting for you stay where they are.',
+      [
+        { text: 'Stay signed in', style: 'cancel' },
+        {
+          text: 'Sign out',
+          style: 'destructive',
+          onPress: () => void signOut(),
+        },
+      ]
+    );
   };
 
   return (
@@ -104,7 +117,7 @@ export function ProfileScreen({
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[profile.status === 'ready' && user ? 1 : 0]}
         contentContainerStyle={{ paddingBottom: insets.bottom + 28 }}>
-        {profile.status === 'loading' && <LoadingState label={profileCopyApi.loading} />}
+        {profile.status === 'loading' && <LoadingState label={'Loading your profile…'} />}
 
         {profile.status === 'error' && !user && (
           <ErrorState label={profile.message} onRetry={profile.refetch} />
@@ -145,9 +158,9 @@ export function ProfileScreen({
           <ProfileTabs
             active={tab}
             labels={{
-              reviews: profileCopyApi.experiences,
-              places: profileCopyApi.places,
-              photos: profileCopyApi.photos,
+              reviews: 'Experiences',
+              places: 'Places',
+              photos: 'Photos',
             }}
             onChange={setTab}
           />
@@ -157,23 +170,23 @@ export function ProfileScreen({
           <View>
             <View className="px-6 pb-1 pt-6">
               <Text className="font-display-semibold text-[19px] text-ink-900">
-                {profileCopyApi.experiences}
+                {'Experiences'}
               </Text>
             </View>
 
-            {experiences.status === 'loading' && <LoadingState label={profileCopyApi.loading} />}
+            {experiences.status === 'loading' && <LoadingState label={'Loading your profile…'} />}
 
             {experiences.status === 'empty' && (
               <EmptyState
                 icon="notebook-outline"
                 tone="sand"
-                title={profileCopyApi.noExperiencesTitle}
-                body={profileCopyApi.noExperiencesBody}
+                title={'No experiences yet'}
+                body={'Visit somewhere, then write it up. It only reaches the people you choose.'}
                 {...(isSelf
                   ? {
-                      actionLabel: profileCopyApi.writeFirst,
-                      onAction: () => router.navigate('/write/place'),
-                    }
+                    actionLabel: 'Write your first experience',
+                    onAction: () => router.navigate('/write/place'),
+                  }
                   : {})}
               />
             )}
@@ -218,11 +231,11 @@ export function ProfileScreen({
               <EmptyState
                 icon="map-marker-off-outline"
                 tone="sand"
-                title={profileCopyApi.noPlacesTitle}
-                body={profileCopyApi.noPlacesBody}
+                title={'No places yet'}
+                body={'Places you write about will collect here.'}
               />
             ) : (
-              <ProfilePlacesGrid places={placesSeen} onOpen={onOpenPlace} />
+              <ProfilePlacesGrid places={placesSeen} imageKeys={photoKeys} onOpen={onOpenPlace} />
             )}
           </View>
         )}
@@ -233,8 +246,8 @@ export function ProfileScreen({
               <EmptyState
                 icon="image-off-outline"
                 tone="sand"
-                title={profileCopyApi.noPhotosTitle}
-                body={profileCopyApi.noPhotosBody}
+                title={'No photos yet'}
+                body={'Photos you attach to an experience show up here.'}
               />
             ) : (
               <ProfilePhotosGrid urls={photoKeys} />
@@ -250,12 +263,12 @@ export function ProfileScreen({
             onPress={confirmSignOut}
             disabled={signingOut}
             accessibilityRole="button"
-            accessibilityLabel={profileCopyApi.signOut}
+            accessibilityLabel={'Sign out'}
             accessibilityState={{ disabled: signingOut }}
             className="mx-6 mt-10 items-center rounded-xl  border border-danger-500 px-6 py-3 active:opacity-70"
             style={{ opacity: signingOut ? 0.5 : 1 }}>
             <Text className="font-body-semibold text-[13px] text-danger-600">
-              {signingOut ? profileCopyApi.signOutBusy : profileCopyApi.signOut}
+              {signingOut ? 'Signing out…' : 'Sign out'}
             </Text>
           </Pressable>
         )}

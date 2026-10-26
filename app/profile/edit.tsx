@@ -13,7 +13,6 @@ import { Avatar } from '@/components/Avatar';
 import { ProfileTopBar } from '@/components/profile/ProfileTopBar';
 import { useApiQuery } from '@/lib/useApiQuery';
 import { validateName } from '@/lib/validation';
-import { profileCopyApi } from '@/data';
 
 /**
  * The server's own limits, restated here so the form can refuse a save instead
@@ -35,7 +34,7 @@ export default function EditProfileScreen() {
   // pre-filled even when opened by deep link rather than from the profile screen.
   const me = useApiQuery(usersApi.me, {
     key: 'edit-profile-me',
-    errorMessage: profileCopyApi.editFailedLoad,
+    errorMessage: 'We could not load your profile.',
   });
 
   const [name, setName] = useState<string | null>(null);
@@ -59,7 +58,7 @@ export default function EditProfileScreen() {
     setError(null);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError(profileCopyApi.avatarPermissionDenied);
+      setError('Trust Circle needs photo access to change your picture.');
       return;
     }
 
@@ -87,7 +86,7 @@ export default function EditProfileScreen() {
       // returns exactly that shape as `url`.
       setAvatarPath(photo.url);
     } catch (caught) {
-      setError(isApiError(caught) ? caught.message : profileCopyApi.avatarUploadFailed);
+      setError(isApiError(caught) ? caught.message : 'We could not upload that photo.');
     } finally {
       setUploading(false);
     }
@@ -122,7 +121,11 @@ export default function EditProfileScreen() {
       await usersApi.updateMe(patch);
       router.back();
     } catch (caught) {
-      setError(isApiError(caught) ? caught.message : profileCopyApi.editFailed);
+      setError(
+        isApiError(caught)
+          ? caught.message
+          : 'We could not save your changes. Try again in a moment.'
+      );
     } finally {
       setBusy(false);
     }
@@ -136,7 +139,7 @@ export default function EditProfileScreen() {
         settingsLabel=""
         topInset={insets.top}
         onBack={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
-        onSettings={() => {}}
+        onSettings={() => { }}
       />
 
       <ScrollView
@@ -148,7 +151,7 @@ export default function EditProfileScreen() {
             onPress={() => void pickAvatar()}
             disabled={uploading}
             accessibilityRole="button"
-            accessibilityLabel={profileCopyApi.changePhoto}
+            accessibilityLabel={'Change photo'}
             accessibilityState={{ disabled: uploading, busy: uploading }}
             className="active:opacity-70">
             <Avatar
@@ -160,13 +163,13 @@ export default function EditProfileScreen() {
           </Pressable>
 
           <Text className="mt-3 font-body text-[12px] text-primary-600">
-            {uploading ? profileCopyApi.uploadingPhoto : profileCopyApi.changePhoto}
+            {uploading ? 'Uploading…' : 'Change photo'}
           </Text>
         </View>
 
         <View className="mt-8 gap-6 px-6">
           <AuthField
-            label={profileCopyApi.nameLabel}
+            label={'Name'}
             value={currentName}
             onChangeText={setName}
             onBlur={() => setTouched(true)}
@@ -178,11 +181,11 @@ export default function EditProfileScreen() {
           />
 
           <AuthField
-            label={profileCopyApi.bioLabel}
+            label={'Bio'}
             value={currentBio}
             onChangeText={setBio}
             onBlur={() => setTouched(true)}
-            error={touched && bioTooLong ? profileCopyApi.bioTooLong : null}
+            error={touched && bioTooLong ? 'That bio is a little long' : null}
             hint={`${currentBio.length}/${BIO_MAX}`}
             multiline
             numberOfLines={4}
@@ -198,7 +201,7 @@ export default function EditProfileScreen() {
 
         <View className="mt-8 px-6">
           <AuthButton
-            label={profileCopyApi.saveChanges}
+            label={'Save changes'}
             onPress={() => void save()}
             busy={busy}
             disabled={!canSave}

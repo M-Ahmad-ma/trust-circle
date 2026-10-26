@@ -12,7 +12,6 @@ import { CircleHeader } from '@/components/circle/CircleHeader';
 import { CircleSearch } from '@/components/circle/CircleSearch';
 import { PeopleRail } from '@/components/circle/PeopleRail';
 import { Screen } from '@/components/Screen';
-import { circleCopyApi, peopleCopy } from '@/data';
 import { useApiQuery } from '@/lib/useApiQuery';
 import type { QueryState } from '@/lib/useApiQuery';
 
@@ -20,11 +19,11 @@ function sharedPlaceReason(suggestion: UserSuggestion): string {
   const { sharedPlaces, sharedPlaceCount } = suggestion;
   if (sharedPlaces.length === 0) return '';
   if (sharedPlaceCount > sharedPlaces.length) {
-    return circleCopyApi.sharedPlacesAndMore(sharedPlaces, sharedPlaceCount);
+    return `Also at ${sharedPlaces.join(', ')} +${sharedPlaceCount - sharedPlaces.length} more`;
   }
   return sharedPlaces.length === 1
-    ? circleCopyApi.sharedPlaceOne(sharedPlaces[0])
-    : circleCopyApi.sharedPlaces(sharedPlaces);
+    ? `Also at ${sharedPlaces[0]}`
+    : `Also at ${sharedPlaces.join(', ')}`;
 }
 
 type SuggestionSectionProps = {
@@ -61,21 +60,25 @@ function SuggestionSection({
     try {
       await usersApi.sendFriendRequest(user.id);
       onRetry();
-      setNotice(peopleCopy.requestSent);
+      setNotice('Request sent. They will see it next time they open the app.');
     } catch (caught) {
       if (hasCode(caught, 'REQUEST_ALREADY_SENT')) {
-        setNotice(peopleCopy.requestSent);
+        setNotice('Request sent. They will see it next time they open the app.');
       } else if (hasCode(caught, 'ALREADY_FRIENDS')) {
-        setNotice(peopleCopy.alreadyFriends);
+        setNotice('You are already in their circle.');
         onBecameFriend();
       } else if (hasCode(caught, 'REQUEST_ALREADY_RECEIVED')) {
-        setNotice(requestIdFrom(caught) ? peopleCopy.theySentYouRequest : peopleCopy.cannotRequest);
+        setNotice(
+          requestIdFrom(caught)
+            ? 'They have already sent you a request — accept it from your Circle screen.'
+            : 'That request could not be sent.'
+        );
       } else if (hasCode(caught, 'BLOCKED') || hasCode(caught, 'YOU_BLOCKED_THEM')) {
-        setNotice(peopleCopy.blocked);
+        setNotice('You cannot connect with this person.');
       } else if (isApiError(caught)) {
         setNotice(caught.message);
       } else {
-        setNotice(peopleCopy.requestFailed);
+        setNotice('That request could not be sent. Try again in a moment.');
       }
     } finally {
       setSuggesting(null);
@@ -87,13 +90,15 @@ function SuggestionSection({
   return (
     <View className="mt-8 px-4">
       <Text className="font-display-semibold text-[18px] text-ink-900">
-        {circleCopyApi.suggestionsTitle}
+        {'People you might trust'}
       </Text>
       <Text className="mt-1.5 font-body text-[12.5px] leading-[19px] text-ink-500">
-        {circleCopyApi.suggestionsBody}
+        {
+          'People who have been to the same places as you. Their shared visit has to be something you were both allowed to see.'
+        }
       </Text>
 
-      {status === 'loading' && <LoadingState label={circleCopyApi.suggestionsLoading} />}
+      {status === 'loading' && <LoadingState label={'Looking for shared places…'} />}
 
       {status === 'error' && <ErrorState label={errorMessage} onRetry={onRetry} />}
 
@@ -103,7 +108,7 @@ function SuggestionSection({
       {settled && items.length > 0 && (
         <CircleSearch
           value={search}
-          placeholder={circleCopyApi.filterSuggestions}
+          placeholder={'Search these people'}
           onChange={setSearch}
           className="mt-4 flex-row items-center rounded-pill border border-border bg-paper-50 px-4"
         />
@@ -114,8 +119,10 @@ function SuggestionSection({
           icon="account-search-outline"
           tone="sand"
           compact
-          title={circleCopyApi.suggestionsEmptyTitle}
-          body={circleCopyApi.suggestionsEmptyBody}
+          title={'No shared places yet'}
+          body={
+            'Share an experience somewhere and the people who have been there too will show up here.'
+          }
         />
       )}
 
@@ -162,10 +169,10 @@ function SuggestionSection({
                 onPress={() => void suggest(suggestion.user)}
                 disabled={suggesting === suggestion.user.id}
                 accessibilityRole="button"
-                accessibilityLabel={`${circleCopyApi.addToCircle} ${suggestion.user.name}`}
+                accessibilityLabel={`${'Add'} ${suggestion.user.name}`}
                 className="rounded-pill border border-primary-600 px-3 py-1.5 active:bg-rose-100">
                 <Text className="font-body-semibold text-[11px] text-primary-600">
-                  {suggesting === suggestion.user.id ? '…' : circleCopyApi.addToCircle}
+                  {suggesting === suggestion.user.id ? '…' : 'Add'}
                 </Text>
               </Pressable>
             </View>
@@ -178,7 +185,7 @@ function SuggestionSection({
         accessibilityRole="button"
         className="mt-4 flex flex-row items-center gap-2 self-start active:opacity-60">
         <Text className="font-body-semibold text-[13px] text-primary-600">
-          {circleCopyApi.searchByNameLink}
+          {'Search by name instead'}
         </Text>
         <MaterialCommunityIcons name="arrow-right" size={18} color="#7e2534" />
       </Pressable>
@@ -191,10 +198,10 @@ function RequestsEmptyState() {
     <View className="mt-3 items-center rounded-card border border-dashed border-sand-400 bg-paper-100 px-6 py-7">
       <MaterialCommunityIcons name="account-check-outline" size={22} color="#b8a37c" />
       <Text className="mt-2.5 font-body-semibold text-[13px] text-ink-600">
-        {circleCopyApi.noRequestsTitle}
+        {'Nothing waiting'}
       </Text>
       <Text className="mt-1 max-w-[260px] text-center font-body text-[12px] leading-[18px] text-ink-400">
-        {circleCopyApi.noRequestsBody}
+        {'When someone asks to join your Circle, they will show up here for you to accept.'}
       </Text>
     </View>
   );
@@ -245,7 +252,7 @@ export default function CircleScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}>
         <CircleHeader
-          eyebrow={circleCopyApi.requests}
+          eyebrow={'Requests'}
           title="Circle"
           subtitle="People whose judgement you actually rely on."
           inviteLabel="Invite someone"
@@ -255,7 +262,7 @@ export default function CircleScreen() {
         <View className="mx-4 mt-5 h-px bg-border" />
 
         {friends.status === 'loading' && !friends.data && (
-          <LoadingState label={circleCopyApi.loading} />
+          <LoadingState label={'Loading your circle…'} />
         )}
 
         {friends.status === 'error' && !friends.data && (
@@ -279,11 +286,7 @@ export default function CircleScreen() {
               onOpenPerson={(id) => router.push(`/profile/${id}`)}
             />
 
-            <CircleSearch
-              value={query}
-              placeholder={circleCopyApi.filterCircle}
-              onChange={setQuery}
-            />
+            <CircleSearch value={query} placeholder={'Filter your circle'} onChange={setQuery} />
 
             {people.length === 0 ? (
               <EmptyState
@@ -327,7 +330,9 @@ export default function CircleScreen() {
           status={suggestions.status}
           items={suggestions.data ?? []}
           errorMessage={
-            suggestions.status === 'error' ? suggestions.message : circleCopyApi.suggestionsFailed
+            suggestions.status === 'error'
+              ? suggestions.message
+              : 'We could not find anyone just now.'
           }
           onRetry={suggestions.refetch}
           onBecameFriend={friends.refetch}
@@ -336,9 +341,7 @@ export default function CircleScreen() {
         {/* Incoming requests are real: there is an endpoint and a state machine. */}
         {requests.status !== 'loading' && (
           <View className="mt-8 px-4">
-            <Text className="font-body-semibold text-2xs uppercase text-ink-400">
-              {circleCopyApi.requests}
-            </Text>
+            <Text className="font-body-semibold text-2xs uppercase text-ink-400">{'Requests'}</Text>
 
             {requests.status === 'error' ? (
               <View className="mt-3">
@@ -365,21 +368,19 @@ export default function CircleScreen() {
                       onPress={() => void respond(request, true)}
                       disabled={actingOn === request.requestId}
                       accessibilityRole="button"
-                      accessibilityLabel={`${circleCopyApi.accept} ${request.user.name}`}
+                      accessibilityLabel={`${'Accept'} ${request.user.name}`}
                       className="rounded-pill bg-primary-600 px-3 py-1.5 active:opacity-70">
                       <Text className="font-body-semibold text-[11px] text-primary-fg">
-                        {circleCopyApi.accept}
+                        {'Accept'}
                       </Text>
                     </Pressable>
                     <Pressable
                       onPress={() => void respond(request, false)}
                       disabled={actingOn === request.requestId}
                       accessibilityRole="button"
-                      accessibilityLabel={`${circleCopyApi.decline} ${request.user.name}`}
+                      accessibilityLabel={`${'Decline'} ${request.user.name}`}
                       className="rounded-pill border border-border px-3 py-1.5 active:opacity-70">
-                      <Text className="font-body-medium text-[11px] text-ink-600">
-                        {circleCopyApi.decline}
-                      </Text>
+                      <Text className="font-body-medium text-[11px] text-ink-600">{'Decline'}</Text>
                     </Pressable>
                   </View>
                 ))}

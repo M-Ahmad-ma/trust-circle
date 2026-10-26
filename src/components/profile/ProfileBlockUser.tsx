@@ -3,7 +3,6 @@ import { Alert, Pressable, Text, View } from 'react-native';
 
 import { usersApi } from '@/api';
 import { hasCode, isApiError } from '@/api/errors';
-import { peopleCopy, profileCopyApi } from '@/data';
 
 type ProfileBlockUserProps = {
   userId: string;
@@ -39,20 +38,28 @@ export function ProfileBlockUser({ userId, userName, onBlocked }: ProfileBlockUs
       await usersApi.blockUser(userId);
       onBlocked();
     } catch (error) {
-      if (hasCode(error, 'SELF_BLOCK')) setNotice(profileCopyApi.blockSelf);
-      else setNotice(isApiError(error) ? error.message : peopleCopy.blockFailed);
+      if (hasCode(error, 'SELF_BLOCK')) setNotice('You cannot block yourself.');
+      else
+        setNotice(
+          isApiError(error)
+            ? error.message
+            : 'That person could not be blocked. Try again in a moment.'
+        );
       setBusy(false);
     }
   };
 
   const confirm = () => {
     Alert.alert(
-      profileCopyApi.blockConfirmTitle,
-      profileCopyApi.blockConfirmBody.replace('{name}', userName),
+      'Block this person?',
+      '{name} will not be able to find you, send you requests, or see anything you share. If they are in your Circle, this removes them from it. You can undo this later in Settings.'.replace(
+        '{name}',
+        userName
+      ),
       [
-        { text: profileCopyApi.blockCancel, style: 'cancel' },
+        { text: 'Keep them', style: 'cancel' },
         {
-          text: profileCopyApi.blockConfirmAction,
+          text: 'Block',
           style: 'destructive',
           onPress: () => void run(),
         },
@@ -67,12 +74,12 @@ export function ProfileBlockUser({ userId, userName, onBlocked }: ProfileBlockUs
         onPress={confirm}
         disabled={busy}
         accessibilityRole="button"
-        accessibilityLabel={`${profileCopyApi.blockUser} ${userName}`}
+        accessibilityLabel={`${'Block this person'} ${userName}`}
         accessibilityState={{ disabled: busy, busy }}
         className="h-10 items-center justify-center rounded-[12px] active:opacity-70"
         style={{ opacity: busy ? 0.5 : 1 }}>
         <Text className="font-body-medium text-[12.5px] text-ink-400">
-          {busy ? '…' : profileCopyApi.blockUser}
+          {busy ? '…' : 'Block this person'}
         </Text>
       </Pressable>
 

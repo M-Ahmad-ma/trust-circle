@@ -13,12 +13,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { placesApi, experiencesApi } from '@/api';
+import { placesApi, experiencesApi, apiBaseUrl } from '@/api';
 import type { WirePlace } from '@/api/types';
 import { FlowHeader } from '@/components/write/FlowHeader';
 import { STEP_ROUTES, useExperienceDraft } from '@/lib/experienceDraft';
 import { useUserLocation } from '@/lib/useUserLocation';
-import { writeCopy } from '@/data';
 import { photo } from '@/theme/photoMap';
 
 export default function PlaceStep() {
@@ -62,7 +61,9 @@ export default function PlaceStep() {
         if (cancelled) return;
         // Leave `editing` null so this stays a blank "new experience" draft the
         // user can still use, rather than a half-seeded one they might publish.
-        setSeedError(writeCopy.editExperienceFailed);
+        setSeedError(
+          'That experience could not be opened for editing. You can write a new one instead.'
+        );
       }
     })();
 
@@ -100,7 +101,10 @@ export default function PlaceStep() {
         // Drop responses that a newer keystroke has already superseded.
         if (ticket === requestRef.current) setResults(result.places);
       } catch {
-        if (ticket === requestRef.current) setError(writeCopy.placeSearchFailed);
+        if (ticket === requestRef.current)
+          setError(
+            'We could not reach Trust Circle just now. Check your connection, or pick again in a moment.'
+          );
       } finally {
         if (ticket === requestRef.current) setLoading(false);
       }
@@ -119,6 +123,7 @@ export default function PlaceStep() {
 
   const selected = results.find((place) => place.id === draft.placeId);
 
+  // console.log(results, "results");
   return (
     <View className="flex-1 bg-paper-100">
       <KeyboardAvoidingView
@@ -128,8 +133,8 @@ export default function PlaceStep() {
         <View style={{ paddingTop: insets.top + 8 }}>
           <FlowHeader
             current="place"
-            closeLabel={writeCopy.closeFlow}
-            onClose={() => router.dismissAll()}
+            closeLabel={'Discard this experience'}
+            onClose={() => router.replace('/(tabs)/')}
           />
         </View>
 
@@ -140,7 +145,7 @@ export default function PlaceStep() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
           <View className="px-5 pt-9">
             <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-              {writeCopy.stepEyebrow}
+              {'New experience'}
             </Text>
             <Text className="mt-3 font-display text-[30px] leading-[35px] text-ink-900">
               Where did you <Text className="font-display-italic text-primary-600">go</Text>?
@@ -153,7 +158,7 @@ export default function PlaceStep() {
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder={writeCopy.searchPlaces}
+                placeholder={'Search places near you'}
                 placeholderTextColor="#b8a37c"
                 autoCorrect={false}
                 returnKeyType="search"
@@ -163,7 +168,7 @@ export default function PlaceStep() {
                 <Pressable
                   onPress={() => setQuery('')}
                   accessibilityRole="button"
-                  accessibilityLabel={writeCopy.clearSearch}
+                  accessibilityLabel={'Clear search'}
                   hitSlop={8}
                   className="active:opacity-60">
                   <MaterialCommunityIcons name="close-circle" size={15} color="#b8a37c" />
@@ -197,7 +202,7 @@ export default function PlaceStep() {
                 accessibilityRole="button"
                 className="mt-3 self-center active:opacity-60">
                 <Text className="font-body-semibold text-[12px] text-primary-600">
-                  {writeCopy.tryAgain}
+                  {'Try again'}
                 </Text>
               </Pressable>
             </View>
@@ -229,7 +234,7 @@ export default function PlaceStep() {
                     }}>
                     <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-[10px] bg-surface">
                       <Image
-                        source={photo(placeThumbKey(place.category))}
+                        source={{ uri: `${apiBaseUrl()}${place.coverPhoto}` }}
                         style={{ width: 48, height: 48 }}
                         resizeMode="cover"
                         accessibilityIgnoresInvertColors
@@ -241,7 +246,7 @@ export default function PlaceStep() {
                         {place.name}
                       </Text>
                       <Text className="mt-0.5 font-body text-[11px] text-ink-400">
-                        {place.category ?? writeCopy.placeUncategorised}
+                        {place.category ?? 'Place'}
                         {place.city ? ` · ${place.city}` : ''}
                         {typeof place.distanceM === 'number'
                           ? ` · ${formatDistance(place.distanceM)}`
@@ -262,7 +267,7 @@ export default function PlaceStep() {
                     Nothing matches “{query.trim()}”
                   </Text>
                   <Text className="text-center font-body text-[12px] text-ink-400">
-                    {writeCopy.cantFindPlace}
+                    {'It may not be on Trust Circle yet.'}
                   </Text>
                 </View>
               )}
@@ -277,7 +282,7 @@ export default function PlaceStep() {
               className="flex-row items-center justify-center gap-2 rounded-card border border-dashed border-sand-400 py-3.5 active:opacity-70">
               <MaterialCommunityIcons name="plus" size={16} color="#a03246" />
               <Text className="font-body-semibold text-[12.5px] text-primary-600">
-                {writeCopy.addNewPlace}
+                {'Add a new place'}
               </Text>
             </Pressable>
           </View>
@@ -300,7 +305,7 @@ export default function PlaceStep() {
           <Text
             className="font-body-semibold text-[15px]"
             style={{ color: draft.placeId ? '#fdfaf4' : '#f3ecdd' }}>
-            {selected ? writeCopy.continueFrom(selected.name) : writeCopy.choosePlaceFirst}
+            {selected ? `Continue from ${selected.name}` : 'Choose a place first'}
           </Text>
         </Pressable>
       </View>

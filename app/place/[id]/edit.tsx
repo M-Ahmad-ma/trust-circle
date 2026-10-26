@@ -9,18 +9,22 @@ import { hasCode } from '@/api/errors';
 import type { WirePlace } from '@/api/types';
 import { AuthField } from '@/components/auth/AuthField';
 import { ErrorState, LoadingState } from '@/components/EmptyState';
-import { placeCopyApi } from '@/data';
+import { PlaceLocationPicker } from '@/components/PlaceLocationPicker';
 import { useApiQuery } from '@/lib/useApiQuery';
+import { useUserLocation, type Coords } from '@/lib/useUserLocation';
 
-const CATEGORIES = ['restaurant', 'cafe', 'hotel', 'museum', 'landmark', 'park', 'shop', 'other'];
+/**
+ * Server cap for `category` — mirrored client-side so an over-long value is
+ * caught before the round trip. The pill list used to make this impossible;
+ * free text does not.
+ */
+const CATEGORY_MAX = 60;
 
 type Form = {
   name: string;
   category: string;
   address: string;
   city: string;
-  lat: string;
-  lng: string;
 };
 
 /**
@@ -41,14 +45,14 @@ export default function EditPlaceScreen() {
 
   const place = useApiQuery<WirePlace>(() => placesApi.getPlace(id), {
     key: `place:${id}`,
-    errorMessage: placeCopyApi.failed,
+    errorMessage: 'We could not load this place.',
     isEmpty: () => false,
   });
 
   if (place.status === 'loading') {
     return (
       <View className="flex-1 items-center justify-center bg-paper-100">
-        <LoadingState label={placeCopyApi.loading} />
+        <LoadingState label={'Loading place…'} />
       </View>
     );
   }
@@ -75,31 +79,29 @@ export default function EditPlaceScreen() {
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
             accessibilityRole="button"
-            accessibilityLabel={placeCopyApi.back}
+            accessibilityLabel={'Go back'}
             hitSlop={10}
             className="h-9 w-9 items-center justify-center rounded-pill active:opacity-60">
             <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
           </Pressable>
-          <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-            {placeCopyApi.editPlaceEyebrow}
-          </Text>
+          <Text className="font-body-semibold text-3xs uppercase text-ink-400">{'Edit place'}</Text>
           <View className="h-9 w-9" />
         </View>
 
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-center font-display text-[20px] text-ink-900">
-            {placeCopyApi.notPlaceOwnerTitle}
+            {'This place is not yours to edit'}
           </Text>
           <Text className="mt-3 text-center font-body text-[12.5px] leading-[19px] text-ink-500">
-            {placeCopyApi.notPlaceOwnerBody}
+            {
+              'Only the person who added a place can change its name, address or location. If something here is wrong, tell the person who added it.'
+            }
           </Text>
           <Pressable
             onPress={() => router.replace({ pathname: '/place/[id]', params: { id } })}
             accessibilityRole="button"
             className="mt-6 h-11 items-center justify-center rounded-card border border-primary-600 px-6 active:bg-rose-100">
-            <Text className="font-body-semibold text-[13px] text-primary-600">
-              {placeCopyApi.viewPlace}
-            </Text>
+            <Text className="font-body-semibold text-[13px] text-primary-600">{'View place'}</Text>
           </Pressable>
         </View>
       </View>
@@ -111,14 +113,24 @@ export default function EditPlaceScreen() {
 
 function PlaceForm({ place }: { place: WirePlace }) {
   const insets = useSafeAreaInsets();
+  const location = useUserLocation();
 
   const [form, setForm] = useState<Form>(() => ({
     name: place.name,
     category: place.category ?? '',
     address: place.address ?? '',
     city: place.city ?? '',
-    lat: String(place.lat),
-    lng: String(place.lng),
+  }));
+
+  /**
+   * The point, as a coordinate rather than two typed numbers. Decimal degrees
+   * are not something a person editing a place can be expected to work out —
+   * they read a map and say "here, a bit left". The map is the input; the
+   * numbers are only what gets sent.
+   */
+  const [coords, setCoords] = useState<Coords>(() => ({
+    lat: place.lat,
+    lng: place.lng,
   }));
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -134,16 +146,14 @@ function PlaceForm({ place }: { place: WirePlace }) {
     const next: Record<string, string> = {};
     const name = current.name.trim();
 
-    if (name.length === 0) next.name = placeCopyApi.editPlaceNameRequired;
+    if (name.length === 0) next.name = 'A place needs a name.';
     else if (name.length > 140) next.name = 'That name is too long.';
     // Mirrors the server's INVALID_NAME rule.
     else if (!/[\p{L}\p{N}]/u.test(name)) next.name = 'The name needs a letter or number.';
 
-    const lat = Number.parseFloat(current.lat);
-    const lng = Number.parseFloat(current.lng);
-
-    if (Number.isNaN(lat) || lat < -90 || lat > 90) next.lat = 'Latitude must be -90 to 90.';
-    if (Number.isNaN(lng) || lng < -180 || lng > 180) next.lng = 'Longitude must be -180 to 180.';
+    // The pill list made this impossible; free text does not.
+    if (current.category.trim().length > CATEGORY_MAX)
+      next.category = 'That category is too long — 60 characters at most.';
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -163,8 +173,8 @@ function PlaceForm({ place }: { place: WirePlace }) {
         category: form.category.trim() || null,
         address: form.address.trim() || null,
         city: form.city.trim() || null,
-        lat: Number.parseFloat(form.lat),
-        lng: Number.parseFloat(form.lng),
+        lat: coords.lat,
+        lng: coords.lng,
       });
 
       // Replace rather than push: backing out of the edit screen should not
@@ -172,13 +182,15 @@ function PlaceForm({ place }: { place: WirePlace }) {
       router.replace({ pathname: '/place/[id]', params: { id: updated.id } });
     } catch (error) {
       if (hasCode(error, 'PLACE_NOT_FOUND')) {
-        setNotice(placeCopyApi.editPlaceMissing);
+        setNotice('This place no longer exists.');
       } else if (hasCode(error, 'NOT_PLACE_OWNER')) {
-        setNotice(placeCopyApi.notPlaceOwnerBody);
+        setNotice(
+          'Only the person who added a place can change its name, address or location. If something here is wrong, tell the person who added it.'
+        );
       } else if (hasCode(error, 'INVALID_NAME')) {
         setErrors({ name: 'The name needs a letter or number.' });
       } else {
-        setNotice(placeCopyApi.editPlaceFailed);
+        setNotice('Those changes could not be saved. Try again in a moment.');
       }
       setSaving(false);
     }
@@ -196,16 +208,28 @@ function PlaceForm({ place }: { place: WirePlace }) {
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
             accessibilityRole="button"
-            accessibilityLabel={placeCopyApi.back}
+            accessibilityLabel={'Go back'}
             hitSlop={10}
             className="h-9 w-9 items-center justify-center rounded-pill active:opacity-60">
             <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
           </Pressable>
-          <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-            {placeCopyApi.editPlaceEyebrow}
-          </Text>
+          <Text className="font-body-semibold text-3xs uppercase text-ink-400">{'Edit place'}</Text>
           <View className="h-9 w-9" />
         </View>
+
+        {/*
+          The map is the coordinate editor, and it must sit **outside** the
+          vertical ScrollView below: nested inside one, the parent wins the
+          vertical gesture and the map only pans sideways, which reads as a
+          broken map. Pinned above the form it keeps the gesture and stays
+          visible while the fields are edited.
+        */}
+        <PlaceLocationPicker
+          value={coords}
+          onChange={setCoords}
+          center={{ lat: place.lat, lng: place.lng }}
+          userLocation={location}
+        />
 
         <ScrollView
           className="flex-1"
@@ -217,13 +241,15 @@ function PlaceForm({ place }: { place: WirePlace }) {
               Fix the <Text className="font-display-italic text-primary-600">details</Text>.
             </Text>
             <Text className="mt-3 font-body text-[12.5px] leading-[18px] text-ink-500">
-              {placeCopyApi.editPlaceHint}
+              {
+                'Places are shared, so anyone can correct the details. Experiences written about this place are left alone.'
+              }
             </Text>
           </View>
 
           <View className="mt-8 gap-6 px-5">
             <AuthField
-              label={placeCopyApi.editPlaceNameLabel}
+              label={'Place name'}
               value={form.name}
               onChangeText={(name) => set('name', name)}
               error={errors.name || null}
@@ -231,77 +257,35 @@ function PlaceForm({ place }: { place: WirePlace }) {
               returnKeyType="next"
             />
 
-            <View>
-              <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-                {placeCopyApi.editPlaceCategoryLabel}
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                className="mt-2.5 grow-0"
-                contentContainerStyle={{ gap: 8, paddingRight: 4 }}>
-                {CATEGORIES.map((category) => {
-                  const active = form.category === category;
-
-                  return (
-                    <Pressable
-                      key={category}
-                      onPress={() => set('category', active ? '' : category)}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: active }}
-                      className="rounded-pill border px-3.5 py-2 active:opacity-70"
-                      style={{
-                        borderColor: active ? '#a03246' : '#e0d2b4',
-                        backgroundColor: active ? '#a03246' : '#fdfaf4',
-                      }}>
-                      <Text
-                        className={
-                          active
-                            ? 'font-body-semibold text-[11.5px] text-primary-fg'
-                            : 'font-body-medium text-[11.5px] text-ink-700'
-                        }>
-                        {category}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
+            {/*
+              Free text, like the create form. The pill list capped the choice
+              to eight fixed words, and a place is not always one of them —
+              "rooftop bar", "swimming pool", "bookshop". Empty means no
+              category, and the server reads it as clearing the old one.
+            */}
+            <AuthField
+              label={'Category'}
+              value={form.category}
+              onChangeText={(category) => set('category', category)}
+              error={errors.category || null}
+              placeholder="cafe"
+              autoCapitalize="none"
+              returnKeyType="next"
+            />
 
             <AuthField
-              label={placeCopyApi.editPlaceAddressLabel}
+              label={'Address'}
               value={form.address}
               onChangeText={(address) => set('address', address)}
               autoCapitalize="words"
             />
 
             <AuthField
-              label={placeCopyApi.editPlaceCityLabel}
+              label={'City'}
               value={form.city}
               onChangeText={(city) => set('city', city)}
               autoCapitalize="words"
             />
-
-            <View className="flex-row gap-4">
-              <View className="flex-1">
-                <AuthField
-                  label="Latitude"
-                  value={form.lat}
-                  onChangeText={(text) => set('lat', text)}
-                  error={errors.lat || null}
-                  keyboardType="numbers-and-punctuation"
-                />
-              </View>
-              <View className="flex-1">
-                <AuthField
-                  label="Longitude"
-                  value={form.lng}
-                  onChangeText={(text) => set('lng', text)}
-                  error={errors.lng || null}
-                  keyboardType="numbers-and-punctuation"
-                />
-              </View>
-            </View>
           </View>
 
           {notice && (
@@ -329,7 +313,7 @@ function PlaceForm({ place }: { place: WirePlace }) {
           <Text
             className="font-body-semibold text-[15px]"
             style={{ color: saving ? '#f3ecdd' : '#fdfaf4' }}>
-            {saving ? placeCopyApi.saving : placeCopyApi.savePlaceChanges}
+            {saving ? 'Saving…' : 'Save changes'}
           </Text>
         </Pressable>
       </View>

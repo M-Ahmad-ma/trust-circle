@@ -14,17 +14,20 @@ import { ACTION_BAR_CONTENT_HEIGHT, PlaceActionBar } from '@/components/place/Pl
 import { ExperienceRow } from '@/components/place/ExperienceRow';
 import { PlaceBackButton } from '@/components/place/PlaceBackButton';
 import { PlaceHero, hasHero } from '@/components/place/PlaceHero';
-import { placeCopyApi } from '@/data';
 import { useApiQuery } from '@/lib/useApiQuery';
 
 export default function PlaceDetailScreen() {
-  const { id, deduped } = useLocalSearchParams<{ id: string; deduped?: string }>();
+  const { id, deduped, photosFailed } = useLocalSearchParams<{
+    id: string;
+    deduped?: string;
+    photosFailed?: string;
+  }>();
   const insets = useSafeAreaInsets();
 
   const fetchPlace = useCallback(() => placesApi.getPlace(id), [id]);
   const place = useApiQuery<WirePlace>(fetchPlace, {
     key: `place:${id}`,
-    errorMessage: placeCopyApi.failed,
+    errorMessage: 'We could not load this place.',
     isEmpty: () => false,
   });
 
@@ -51,6 +54,8 @@ export default function PlaceDetailScreen() {
   }
 
   const data = place.data;
+  // Read once so the plural below is decided in one place.
+  const failedPhotos = Number(photosFailed) || 1;
 
   return (
     <View className="flex-1 bg-paper-100">
@@ -62,7 +67,7 @@ export default function PlaceDetailScreen() {
         contentContainerStyle={{ paddingBottom: ACTION_BAR_CONTENT_HEIGHT }}>
         {!data && place.status === 'loading' && (
           <View className="flex-1">
-            <LoadingState label={placeCopyApi.loading} />
+            <LoadingState label={'Loading place…'} />
           </View>
         )}
 
@@ -72,7 +77,22 @@ export default function PlaceDetailScreen() {
           <View className="mx-4 mt-4 flex-row gap-2.5 rounded-card bg-surface p-4">
             <MaterialCommunityIcons name="link-variant" size={15} color="#6b6058" />
             <Text className="flex-1 font-body text-[11.5px] leading-[17px] text-ink-500">
-              {placeCopyApi.alreadyExistsNote}
+              {
+                'Someone already added a place like this one, so we opened theirs instead of creating a duplicate.'
+              }
+            </Text>
+          </View>
+        )}
+
+        {data && photosFailed && (
+          // The place was created; only some of its photos made it. Saying so
+          // beats a silently incomplete place.
+          <View className="mx-4 mt-4 flex-row gap-2.5 rounded-card bg-surface p-4">
+            <MaterialCommunityIcons name="image-off-outline" size={15} color="#6b6058" />
+            <Text className="flex-1 font-body text-[11.5px] leading-[17px] text-ink-500">
+              {`The place was added, but ${failedPhotos} photo${
+                failedPhotos === 1 ? '' : 's'
+              } could not be uploaded. You can add them again from the place.`}
             </Text>
           </View>
         )}
@@ -88,8 +108,8 @@ export default function PlaceDetailScreen() {
               address={data.address ?? data.city ?? ''}
               rating={data.avgRating}
               experienceCount={data.experienceCount ?? 0}
-              experienceCountLabel={placeCopyApi.experienceCount}
-              ratingLabel={placeCopyApi.avgRating}
+              experienceCountLabel={(n) => `${n} experiences you can see`}
+              ratingLabel={(r) => `${r.toFixed(1)} average`}
               openNow={null}
             />
 
@@ -105,12 +125,10 @@ export default function PlaceDetailScreen() {
               <Pressable
                 onPress={() => router.push(`/place/${data.id}/edit`)}
                 accessibilityRole="button"
-                accessibilityLabel={placeCopyApi.editPlace}
+                accessibilityLabel={'Edit place'}
                 className="ml-4 mt-3 flex-row items-center gap-1.5 self-start rounded-pill bg-surface px-3 py-1.5 active:opacity-70">
                 <MaterialCommunityIcons name="pencil-outline" size={13} color="#6b6058" />
-                <Text className="font-body-medium text-[11.5px] text-ink-600">
-                  {placeCopyApi.editPlace}
-                </Text>
+                <Text className="font-body-medium text-[11.5px] text-ink-600">{'Edit place'}</Text>
               </Pressable>
             )}
 
@@ -120,15 +138,15 @@ export default function PlaceDetailScreen() {
               </View>
             </View>
 
-            {experiences.status === 'loading' && <LoadingState label={placeCopyApi.loading} />}
+            {experiences.status === 'loading' && <LoadingState label={'Loading place…'} />}
 
             {experiences.status === 'empty' && (
               <EmptyState
                 icon="notebook-outline"
                 tone="sand"
-                title={placeCopyApi.noExperiencesTitle}
-                body={placeCopyApi.noExperiencesBody}
-                actionLabel={placeCopyApi.writeFirst}
+                title={'No experiences yet'}
+                body={'Nobody you can see has written about this place. Be the first.'}
+                actionLabel={'Write an experience'}
                 onAction={() => router.push(`/write?placeId=${data.id}`)}
               />
             )}
@@ -155,7 +173,7 @@ export default function PlaceDetailScreen() {
 
       {data && (
         <PlaceActionBar
-          writeLabel={placeCopyApi.writeFirst}
+          writeLabel={'Write an experience'}
           bottomInset={insets.bottom}
           onWrite={() => router.push(`/write?placeId=${data.id}`)}
         />

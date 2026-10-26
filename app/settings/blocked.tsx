@@ -8,7 +8,6 @@ import { usersApi } from '@/api';
 import type { BlockedEntry } from '@/api/endpoints/users';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState, ErrorState, LoadingState } from '@/components/EmptyState';
-import { settingsCopy } from '@/data';
 import { useApiQuery } from '@/lib/useApiQuery';
 
 export default function BlockedPeopleScreen() {
@@ -18,7 +17,7 @@ export default function BlockedPeopleScreen() {
 
   const blocked = useApiQuery<BlockedEntry[]>(() => usersApi.listBlockedUsers(), {
     key: 'blocked-users',
-    errorMessage: settingsCopy.blockedFailed,
+    errorMessage: 'We could not load your blocked list.',
   });
 
   const unblock = async (entry: BlockedEntry) => {
@@ -30,7 +29,7 @@ export default function BlockedPeopleScreen() {
       // patching local state would hide a failure behind a disappearing row.
       blocked.refetch();
     } catch {
-      setNotice(settingsCopy.unblockFailed);
+      setNotice('That person could not be unblocked. Try again in a moment.');
     } finally {
       setBusyId(null);
     }
@@ -38,12 +37,15 @@ export default function BlockedPeopleScreen() {
 
   const confirmUnblock = (entry: BlockedEntry) => {
     Alert.alert(
-      settingsCopy.unblockTitle,
-      settingsCopy.unblockBody.replace('{name}', entry.user.name),
+      'Unblock this person?',
+      '{name} will be able to see their profile again, and anything they shared with your Circle goes back to being scoped by visibility.'.replace(
+        '{name}',
+        entry.user.name
+      ),
       [
-        { text: settingsCopy.cancel, style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: settingsCopy.unblock,
+          text: 'Unblock',
           onPress: () => void unblock(entry),
         },
       ],
@@ -59,13 +61,13 @@ export default function BlockedPeopleScreen() {
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
           accessibilityRole="button"
-          accessibilityLabel={settingsCopy.back}
+          accessibilityLabel={'Go back'}
           hitSlop={10}
           className="h-10 w-10 items-center justify-center active:opacity-60">
           <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
         </Pressable>
         <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-          {settingsCopy.blockedPeople}
+          {'Blocked people'}
         </Text>
         <View className="h-10 w-10" />
       </View>
@@ -74,7 +76,7 @@ export default function BlockedPeopleScreen() {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 28 }}>
-        {blocked.status === 'loading' && <LoadingState label={settingsCopy.loading} />}
+        {blocked.status === 'loading' && <LoadingState label={'Loading…'} />}
 
         {blocked.status === 'error' && !blocked.data && (
           <ErrorState label={blocked.message} onRetry={blocked.refetch} />
@@ -84,8 +86,10 @@ export default function BlockedPeopleScreen() {
           <EmptyState
             icon="account-check-outline"
             tone="sand"
-            title={settingsCopy.noBlockedTitle}
-            body={settingsCopy.noBlockedBody}
+            title={'Nobody blocked'}
+            body={
+              'People you block are hidden from you, and their profile disappears from your view.'
+            }
           />
         )}
 
@@ -110,7 +114,7 @@ export default function BlockedPeopleScreen() {
                     {entry.user.name}
                   </Text>
                   <Text className="mt-0.5 font-body text-[11px] text-ink-400">
-                    {settingsCopy.blockedOn}{' '}
+                    {'Blocked'}{' '}
                     {new Date(entry.blockedAt).toLocaleDateString(undefined, {
                       day: 'numeric',
                       month: 'short',
@@ -123,12 +127,12 @@ export default function BlockedPeopleScreen() {
                   onPress={() => confirmUnblock(entry)}
                   disabled={busyId === entry.user.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`${settingsCopy.unblock} ${entry.user.name}`}
+                  accessibilityLabel={`${'Unblock'} ${entry.user.name}`}
                   accessibilityState={{ disabled: busyId === entry.user.id }}
                   className="rounded-pill border border-primary-600 px-3.5 py-2 active:opacity-70"
                   style={{ opacity: busyId === entry.user.id ? 0.5 : 1 }}>
                   <Text className="font-body-semibold text-[11.5px] text-primary-600">
-                    {busyId === entry.user.id ? '…' : settingsCopy.unblock}
+                    {busyId === entry.user.id ? '…' : 'Unblock'}
                   </Text>
                 </Pressable>
               </View>

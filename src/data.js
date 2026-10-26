@@ -133,9 +133,12 @@ export const writeCopy = {
   newPlaceNameRequired: 'A place needs a name.',
   newPlaceNameLabel: 'Place name',
   newPlaceCategoryLabel: 'Category',
-  newPlaceCategoryHint: 'Optional. Anything works — cafe, museum, rooftop bar, swimming pool.',
   newPlaceAddressLabel: 'Address',
   newPlaceCityLabel: 'City',
+  newPlacePhotosLabel: 'Photos',
+  newPlacePhotosHint: 'Pictures of the place itself. The first one becomes its cover image.',
+  newPlacePhotosOptionalNote:
+    'Photos are optional, but a place with a cover is far easier to recognise on the map.',
   addPlace: 'Add place',
   saving: 'Saving…',
   newPlaceFailed: 'That place could not be saved. Try again in a moment.',
@@ -312,6 +315,7 @@ export const placeCopyApi = {
   editPlaceNameLabel: 'Place name',
   editPlaceNameRequired: 'A place needs a name.',
   editPlaceCategoryLabel: 'Category',
+  editPlaceCategoryTooLong: 'That category is too long — 60 characters at most.',
   editPlaceAddressLabel: 'Address',
   editPlaceCityLabel: 'City',
   savePlaceChanges: 'Save changes',
@@ -319,6 +323,8 @@ export const placeCopyApi = {
   editPlaceMissing: 'This place no longer exists.',
   alreadyExistsNote:
     'Someone already added a place like this one, so we opened theirs instead of creating a duplicate.',
+  photosFailedNote: (n) =>
+    `The place was added, but ${n} photo${n === 1 ? '' : 's'} could not be uploaded. You can add them again from the place.`,
   notPlaceOwnerTitle: 'This place is not yours to edit',
   notPlaceOwnerBody:
     'Only the person who added a place can change its name, address or location. If something here is wrong, tell the person who added it.',

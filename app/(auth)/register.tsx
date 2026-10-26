@@ -14,7 +14,6 @@ import { AuthField } from '@/components/auth/AuthField';
 import { IdentityPicker } from '@/components/auth/IdentityPicker';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { PasswordStrength } from '@/components/auth/PasswordStrength';
-import { authCopy } from '@/data';
 import { validateEmail, validateName, validatePassword } from '@/lib/validation';
 
 export default function RegisterScreen() {
@@ -56,14 +55,22 @@ export default function RegisterScreen() {
     } catch (error) {
       if (isNetworkError(error)) {
         // Never reached the server — not a problem with what was typed.
-        setServerError(authCopy.serverUnreachable);
+        setServerError(
+          'We could not reach the server. Check that the API is running and the address in .env is right.'
+        );
       } else if (hasCode(error, 'DATABASE_UNAVAILABLE')) {
-        setServerError(authCopy.serverDegraded);
+        setServerError(
+          'The server is up but its database is not right now. This is on us — please try again in a moment.'
+        );
       } else if (hasCode(error, 'EMAIL_TAKEN')) {
-        setServerError(authCopy.emailTaken);
+        setServerError('That email already has an account. Sign in instead?');
       } else {
         const fields = fieldErrors(error);
-        setServerError(fields.email ?? fields.name ?? authCopy.registerFailed);
+        setServerError(
+          fields.email ??
+            fields.name ??
+            'We could not create your account just now. Try again in a moment.'
+        );
       }
     } finally {
       setBusy(false);
@@ -89,7 +96,7 @@ export default function RegisterScreen() {
 
           <View className="px-6 pt-10">
             <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-              {authCopy.registerEyebrow}
+              {'Create an account'}
             </Text>
 
             <Text className="mt-3 font-display text-[34px] leading-[38px] text-ink-900">
@@ -97,13 +104,15 @@ export default function RegisterScreen() {
             </Text>
 
             <Text className="mt-3 max-w-[310px] font-body text-[13px] leading-[19px] text-ink-500">
-              {authCopy.registerSubtitle}
+              {
+                'A circle is small on purpose. Invite the people whose judgement you actually rely on.'
+              }
             </Text>
           </View>
 
           <View className="mt-9 gap-6 px-6">
             <AuthField
-              label={authCopy.nameLabel}
+              label={'Name'}
               value={name}
               onChangeText={setName}
               onBlur={() => setTouched((t) => ({ ...t, name: true }))}
@@ -115,7 +124,7 @@ export default function RegisterScreen() {
             />
 
             <AuthField
-              label={authCopy.emailLabel}
+              label={'Email'}
               value={email}
               onChangeText={setEmail}
               onBlur={() => setTouched((t) => ({ ...t, email: true }))}
@@ -129,7 +138,7 @@ export default function RegisterScreen() {
 
             <View>
               <PasswordField
-                label={authCopy.passwordLabel}
+                label={'Password'}
                 value={password}
                 onChange={setPassword}
                 onSubmitEditing={submit}
@@ -159,7 +168,9 @@ export default function RegisterScreen() {
               onPress={() => setAccepted((current) => !current)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: accepted }}
-              accessibilityLabel={authCopy.termsLabel}
+              accessibilityLabel={
+                'I agree to keep reviews honest, and to only claim places I have actually been to.'
+              }
               className="flex-row items-start gap-2.5 active:opacity-70">
               <View className="mt-0.5">
                 <MaterialCommunityIcons
@@ -169,13 +180,15 @@ export default function RegisterScreen() {
                 />
               </View>
               <Text className="flex-1 font-body text-[11.5px] leading-[17px] text-ink-500">
-                {authCopy.termsLabel}
+                {
+                  'I agree to keep reviews honest, and to only claim places I have actually been to.'
+                }
               </Text>
             </Pressable>
 
             <View className="mt-6">
               <AuthButton
-                label={authCopy.createAccount}
+                label={'Create account'}
                 icon="arrow-right"
                 onPress={submit}
                 disabled={!canSubmit}
@@ -185,10 +198,8 @@ export default function RegisterScreen() {
           </View>
 
           <View className="mt-7 flex-row items-center justify-center gap-1.5">
-            <Text className="font-body text-[13px] text-ink-500">{authCopy.haveAccount}</Text>
-            <AuthLink onPress={() => router.replace('/(auth)/login')}>
-              {authCopy.signInInstead}
-            </AuthLink>
+            <Text className="font-body text-[13px] text-ink-500">{'Already with us?'}</Text>
+            <AuthLink onPress={() => router.replace('/(auth)/login')}>{'Sign in instead'}</AuthLink>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

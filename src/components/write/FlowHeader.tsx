@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, TouchableOpacity, View } from 'react-native';
 
 import { STEPS, useExperienceDraft, stepStatus, type StepId } from '@/lib/experienceDraft';
 
@@ -20,8 +20,10 @@ export function FlowHeader({ current, onClose, closeLabel }: FlowHeaderProps) {
   return (
     <View>
       <View className="flex-row items-center justify-between px-5">
-        <Text className="font-body-semibold text-3xs uppercase text-ink-400">New experience</Text>
-
+        <TouchableOpacity onPress={onClose} className='flex flex-row items-center gap-2'>
+          <MaterialCommunityIcons name='arrow-left' size={19} color="#6b6058" />
+          <Text className="font-body-semibold text-3xs uppercase text-ink-400">New experience</Text>
+        </TouchableOpacity>
         <Pressable
           onPress={onClose}
           accessibilityRole="button"

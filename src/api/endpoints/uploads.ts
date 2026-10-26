@@ -11,11 +11,19 @@ import type { Photo } from '../types';
  */
 export type UploadResult = Photo;
 
-export async function uploadPhoto(file: {
-  uri: string;
-  name: string;
-  type: string;
-}): Promise<UploadResult> {
+/**
+ * `placeId` attaches the photo to the place itself rather than leaving it
+ * unattached, which is what makes it the place's cover. The server reads it as
+ * a plain multipart text field.
+ */
+export async function uploadPhoto(
+  file: {
+    uri: string;
+    name: string;
+    type: string;
+  },
+  options: { placeId?: string } = {}
+): Promise<UploadResult> {
   const form = new FormData();
 
   /**
@@ -42,6 +50,9 @@ export async function uploadPhoto(file: {
     type: file.type,
     bytes: () => source.bytes(),
   } as unknown as Blob);
+
+  // A text part, not a file: the server reads it off the multipart body.
+  if (options.placeId) form.append('placeId', options.placeId);
 
   log.upload.info('uploading photo', { name: file.name, type: file.type });
   const result = await unwrap<UploadResult>(await api('/api/uploads', { method: 'POST', form }));

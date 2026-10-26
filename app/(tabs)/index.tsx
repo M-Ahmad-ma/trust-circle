@@ -16,7 +16,6 @@ import { Screen } from '@/components/Screen';
 import { SearchField } from '@/components/SearchField';
 import { Stars } from '@/components/Stars';
 import { ViewModeToggle } from '@/components/ViewModeToggle';
-import { exploreCopy } from '@/data';
 import { useApiQuery } from '@/lib/useApiQuery';
 import { useUserLocation } from '@/lib/useUserLocation';
 
@@ -36,7 +35,7 @@ function geoKey(lat: number, lng: number) {
 export default function ExploreScreen() {
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<'map' | 'list'>('map');
-  const [layer, setLayer] = useState<ExploreLayer>('experiences');
+  const [layer, setLayer] = useState<ExploreLayer>('places');
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [selectedExperienceId, setSelectedExperienceId] = useState<string | null>(null);
   const [recenterToken, setRecenterToken] = useState(0);
@@ -69,19 +68,19 @@ export default function ExploreScreen() {
 
   const places = useApiQuery<WirePlace[]>(fetchPlaces, {
     key: `places:${query}:${geoKey(center.lat, center.lng)}`,
-    errorMessage: exploreCopy.placesFailed,
+    errorMessage: 'We could not load nearby places.',
     isEmpty: noIsEmpty,
   });
 
   const experiences = useApiQuery<ExperienceCard[]>(fetchExperiences, {
     key: `experiences:${geoKey(center.lat, center.lng)}`,
-    errorMessage: exploreCopy.experiencesFailed,
+    errorMessage: 'We could not load experiences nearby.',
     isEmpty: noIsEmpty,
   });
 
   const me = useApiQuery(usersApi.me, {
     key: 'me',
-    errorMessage: exploreCopy.meFailed,
+    errorMessage: 'We could not load your profile.',
     isEmpty: () => false,
   });
 
@@ -101,13 +100,13 @@ export default function ExploreScreen() {
     setRecenterToken((token) => token + 1);
   };
 
+
+  console.log("me", me)
+
   return (
     <Screen className="bg-paper-100" edges={['top']}>
       <View className="mt-4 flex grow-0 flex-row items-end justify-between">
-        <ExploreHeader
-          eyebrow={exploreCopy.eyebrow}
-          title={location.isFallback ? exploreCopy.title : exploreCopy.titleNearYou}
-        />
+        <ExploreHeader eyebrow={'Explore'} title={location.isFallback ? 'Peshawar' : 'Near you'} />
 
         {me.data ? (
           <TouchableOpacity onPress={() => router.push('/profile')}>
@@ -118,22 +117,26 @@ export default function ExploreScreen() {
         ) : null}
       </View>
 
-      <SearchField value={query} placeholder={exploreCopy.searchPlaceholder} onChange={setQuery} />
+      <SearchField
+        value={query}
+        placeholder={'Search places, people or experiences…'}
+        onChange={setQuery}
+      />
 
       {/* Always visible, not tucked into an empty state. The `EmptyState` below
           only mounts when the query returns nothing, so a user whose city has
           places in it — which is everyone but a brand-new account on a new city —
           had no way to add one at all. */}
-      <Pressable
-        onPress={() => router.push({ pathname: '/write/new-place', params: { standalone: '1' } })}
-        accessibilityRole="button"
-        accessibilityLabel={exploreCopy.addAPlace}
-        className="mt-2.5 flex-row items-center justify-center gap-2 rounded-card border border-dashed border-sand-400 py-3 active:opacity-70">
-        <MaterialCommunityIcons name="plus" size={15} color="#a03246" />
-        <Text className="font-body-semibold text-[12px] text-primary-600">
-          {exploreCopy.addAPlace}
-        </Text>
-      </Pressable>
+      <View className='flex items-center justify-center'>
+        <Pressable
+          onPress={() => router.push({ pathname: '/write/new-place', params: { standalone: '1' } })}
+          accessibilityRole="button"
+          accessibilityLabel={'Add a place'}
+          className="mt-2.5 w-[90%]  flex-row items-center justify-center gap-2 rounded-card border border-dashed border-sand-400 py-3 active:opacity-70">
+          <MaterialCommunityIcons name="plus" size={15} color="#a03246" />
+          <Text className="font-body-semibold text-[12px] text-primary-600">{'Add a place'}</Text>
+        </Pressable>
+      </View>
 
       <LocationBanner
         status={location.status}
@@ -144,7 +147,7 @@ export default function ExploreScreen() {
       <View className="relative mt-4 flex-1 overflow-hidden">
         {activeQuery.status === 'loading' && !activeQuery.data && (
           <LoadingState
-            label={layer === 'places' ? exploreCopy.loadingPlaces : exploreCopy.loadingExperiences}
+            label={layer === 'places' ? 'Looking around nearby…' : 'Finding experiences near you…'}
           />
         )}
 
@@ -156,9 +159,13 @@ export default function ExploreScreen() {
           <EmptyState
             icon="map-search-outline"
             tone="sand"
-            title={layer === 'places' ? exploreCopy.noPlacesTitle : exploreCopy.noExperiencesTitle}
-            body={layer === 'places' ? exploreCopy.noPlacesBody : exploreCopy.noExperiencesBody}
-            actionLabel={exploreCopy.addAPlace}
+            title={layer === 'places' ? 'Nothing here yet' : 'No experiences here yet'}
+            body={
+              layer === 'places'
+                ? 'No places match this search within 20 km. Try a different name, or add the place yourself.'
+                : 'Nobody you can see has written about anywhere within 20 km. Write the first one.'
+            }
+            actionLabel={'Add a place'}
             // Standalone too: this button also lives on Explore, so it must not
             // drop the user into the review flow. The experiences-layer empty
             // state shares this action, and "add a place" is the right next step
@@ -202,8 +209,8 @@ export default function ExploreScreen() {
               <ExploreLayerToggle
                 layer={layer}
                 onLayerChange={setLayer}
-                placesLabel={exploreCopy.placesLayer}
-                experiencesLabel={exploreCopy.experiencesLayer}
+                placesLabel={'Places'}
+                experiencesLabel={'Experiences'}
               />
             )}
           </>
@@ -260,7 +267,7 @@ function PlaceSummary({
       <View className="mt-3">
         <Text className="font-display text-[19px] leading-6 text-ink-800">{place.name}</Text>
         <Text className="mt-1 font-body text-[12px] text-ink-500">
-          {place.category ?? exploreCopy.place}
+          {place.category ?? 'Place'}
           {place.city ? ` · ${place.city}` : ''}
           {distance ? ` · ${distance}` : ''}
         </Text>
@@ -275,7 +282,7 @@ function PlaceSummary({
           <Text className="font-body-bold text-[13px] text-ink-800">
             {place.avgRating.toFixed(1)}
           </Text>
-          <Text className="font-body text-[11.5px] text-ink-400">{exploreCopy.averageRating}</Text>
+          <Text className="font-body text-[11.5px] text-ink-400">{'Average rating'}</Text>
         </View>
       )}
 
@@ -283,7 +290,7 @@ function PlaceSummary({
         <View className="mt-2 flex-row items-center gap-1.5">
           <View className="h-1.5 w-1.5 rounded-pill bg-moss-500" />
           <Text className="font-body text-[11.5px] text-ink-500">
-            {place.experienceCount} {exploreCopy.experiencesVisible}
+            {place.experienceCount} {'experiences you can see'}
           </Text>
         </View>
       )}
@@ -295,21 +302,17 @@ function PlaceSummary({
         <Pressable
           onPress={onWrite}
           accessibilityRole="button"
-          accessibilityLabel={exploreCopy.writeExperience}
+          accessibilityLabel={'Write an experience here'}
           className="h-12 flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-hairline active:opacity-70">
           <MaterialCommunityIcons name="square-edit-outline" size={15} color="#6b6058" />
-          <Text className="font-body-semibold text-[14px] text-ink-700">
-            {exploreCopy.writeExperienceShort}
-          </Text>
+          <Text className="font-body-semibold text-[14px] text-ink-700">{'Write'}</Text>
         </Pressable>
 
         <Pressable
           onPress={onOpen}
           accessibilityRole="button"
           className="h-12 flex-1 items-center justify-center rounded-card bg-primary-600 active:bg-primary-700">
-          <Text className="font-body-semibold text-[14px] text-primary-fg">
-            {exploreCopy.viewPlace}
-          </Text>
+          <Text className="font-body-semibold text-[14px] text-primary-fg">{'View place'}</Text>
         </Pressable>
       </View>
     </View>
@@ -343,7 +346,7 @@ function PlaceDirectory({
               {place.name}
             </Text>
             <Text numberOfLines={1} className="mt-0.5 font-body text-[11px] text-ink-400">
-              {place.category ?? exploreCopy.place}
+              {place.category ?? 'Place'}
               {place.city ? ` · ${place.city}` : ''}
             </Text>
           </View>

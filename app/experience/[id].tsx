@@ -14,7 +14,6 @@ import { Avatar } from '@/components/Avatar';
 import { Stars } from '@/components/Stars';
 import { RelationshipBadge } from '@/components/write/Relationship';
 import { formatVisitDate, relativeVisit } from '@/components/write/VisitCalendar';
-import { experienceCopy } from '@/data';
 
 type State =
   | { kind: 'loading' }
@@ -85,12 +84,15 @@ export default function ExperienceScreen() {
   const confirmDelete = () => {
     const name = state.kind === 'ready' ? state.experience.place.name : '';
     Alert.alert(
-      experienceCopy.deleteConfirmTitle,
-      experienceCopy.deleteConfirmBody.replace('{place}', name),
+      'Delete this experience?',
+      'Your write-up of {place}, its rating and its photos are removed for everyone. This cannot be undone.'.replace(
+        '{place}',
+        name
+      ),
       [
-        { text: experienceCopy.deleteCancel, style: 'cancel' },
+        { text: 'Keep it', style: 'cancel' },
         {
-          text: experienceCopy.deleteAction,
+          text: 'Delete',
           style: 'destructive',
           onPress: () => void runDelete(),
         },
@@ -109,20 +111,18 @@ export default function ExperienceScreen() {
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
           accessibilityRole="button"
-          accessibilityLabel={experienceCopy.back}
+          accessibilityLabel={'Go back'}
           hitSlop={10}
           className="h-10 w-10 items-center justify-center active:opacity-60">
           <Text className="font-display text-[24px] text-ink-800">‹</Text>
         </Pressable>
-        <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-          {experienceCopy.experience}
-        </Text>
+        <Text className="font-body-semibold text-3xs uppercase text-ink-400">{'Experience'}</Text>
         <View className="h-10 w-10" />
       </View>
 
       {state.kind === 'loading' && (
         <View className="flex-1 items-center justify-center">
-          <Text className="font-body text-[12px] text-ink-400">{experienceCopy.loading}</Text>
+          <Text className="font-body text-[12px] text-ink-400">{'Loading experience…'}</Text>
         </View>
       )}
 
@@ -130,17 +130,17 @@ export default function ExperienceScreen() {
         <View className="flex-1 items-center justify-center gap-3 px-8">
           <Text className="text-center font-display text-[20px] text-ink-900">
             {state.kind === 'hidden'
-              ? experienceCopy.hidden
+              ? 'This experience is not shared with you.'
               : state.kind === 'missing'
-                ? experienceCopy.missing
-                : experienceCopy.failed}
+                ? 'This experience is gone.'
+                : 'We could not load this experience.'}
           </Text>
           <Text className="text-center font-body text-[12.5px] leading-[19px] text-ink-500">
             {state.kind === 'hidden'
-              ? experienceCopy.hiddenBody
+              ? "It was published to a smaller audience than the one you are in. That is the author's choice, not a bug."
               : state.kind === 'missing'
-                ? experienceCopy.missingBody
-                : experienceCopy.failedBody}
+                ? 'It may have been deleted by the person who wrote it.'
+                : 'Check your connection and try again.'}
           </Text>
 
           <View className="mt-2 flex-row gap-4">
@@ -153,7 +153,7 @@ export default function ExperienceScreen() {
                 accessibilityRole="button"
                 className="active:opacity-60">
                 <Text className="font-body-semibold text-[13px] text-primary-600">
-                  {experienceCopy.tryAgain}
+                  {'Try again'}
                 </Text>
               </Pressable>
             )}
@@ -162,7 +162,7 @@ export default function ExperienceScreen() {
               accessibilityRole="button"
               className="active:opacity-60">
               <Text className="font-body-semibold text-[13px] text-primary-600">
-                {experienceCopy.backToMap}
+                {'Back to the map'}
               </Text>
             </Pressable>
           </View>
@@ -190,7 +190,7 @@ export default function ExperienceScreen() {
               accessibilityRole="button"
               className="h-12 items-center justify-center rounded-card border border-primary-600 active:bg-rose-100">
               <Text className="font-body-semibold text-[14px] text-primary-600">
-                {experienceCopy.viewPlace}
+                {'View place'}
               </Text>
             </Pressable>
           </View>
@@ -261,7 +261,7 @@ function ExperienceBody({
         <Text className="font-display text-[26px] leading-[32px] text-ink-900">{place.name}</Text>
 
         <Text className="mt-2 font-body text-[12.5px] text-ink-500">
-          {place.category ?? experienceCopy.place}
+          {place.category ?? 'Place'}
           {place.city ? ` · ${place.city}` : ''}
         </Text>
 
@@ -290,13 +290,10 @@ function ExperienceBody({
         <View className="mt-6 gap-2 border-t border-hairline pt-4">
           <Row
             icon="calendar-check-outline"
-            text={`${experienceCopy.visited} ${formatVisitDate(experience.visitedAt)} · ${relativeVisit(experience.visitedAt)}`}
+            text={`${'Visited'} ${formatVisitDate(experience.visitedAt)} · ${relativeVisit(experience.visitedAt)}`}
           />
           {resolvedPhotos.length > 0 && (
-            <Row
-              icon="camera-outline"
-              text={`${resolvedPhotos.length} ${experienceCopy.originalPhotos}`}
-            />
+            <Row icon="camera-outline" text={`${resolvedPhotos.length} ${'original photos'}`} />
           )}
           <Row icon="map-marker-outline" text={place.address ?? place.city ?? place.name} />
         </View>
@@ -306,25 +303,23 @@ function ExperienceBody({
             <Pressable
               onPress={onEdit}
               accessibilityRole="button"
-              accessibilityLabel={experienceCopy.edit}
+              accessibilityLabel={'Edit'}
               className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-hairline active:opacity-70">
               <MaterialCommunityIcons name="pencil-outline" size={15} color="#6b6058" />
-              <Text className="font-body-semibold text-[13px] text-ink-700">
-                {experienceCopy.edit}
-              </Text>
+              <Text className="font-body-semibold text-[13px] text-ink-700">{'Edit'}</Text>
             </Pressable>
 
             <Pressable
               onPress={onDelete}
               disabled={deleting}
               accessibilityRole="button"
-              accessibilityLabel={experienceCopy.delete}
+              accessibilityLabel={'Delete'}
               accessibilityState={{ disabled: deleting, busy: deleting }}
               className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-danger-500 active:opacity-70"
               style={{ opacity: deleting ? 0.5 : 1 }}>
               <MaterialCommunityIcons name="trash-can-outline" size={15} color="#a03246" />
               <Text className="font-body-semibold text-[13px] text-danger-600">
-                {deleting ? experienceCopy.deleting : experienceCopy.delete}
+                {deleting ? 'Deleting…' : 'Delete'}
               </Text>
             </Pressable>
           </View>

@@ -72,13 +72,16 @@ export function Avatar({ user, size = 32, ringColor, ringWidth = 0, tintOverride
     );
   }
 
-  return (
-    <Monogram
-      initials={initialsFrom(user.name)}
-      tint={tintOverride ?? tintForId(user.id)}
-      size={size}
-      ringColor={ringColor}
-      ringWidth={ringWidth}
-    />
-  );
+  if (user.name) {
+    return (
+      <Monogram
+        initials={initialsFrom(user.name)}
+        tint={tintOverride ?? tintForId(user.id)}
+        size={size}
+        ringColor={ringColor}
+        ringWidth={ringWidth}
+      />
+    );
+  }
+
 }

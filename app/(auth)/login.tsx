@@ -10,7 +10,6 @@ import { AuthBackdrop } from '@/components/auth/AuthBackdrop';
 import { AuthButton, AuthLink, StepMarker } from '@/components/auth/AuthButton';
 import { AuthField } from '@/components/auth/AuthField';
 import { PasswordField } from '@/components/auth/PasswordField';
-import { authCopy } from '@/data';
 import { validateEmail, validatePassword } from '@/lib/validation';
 
 export default function LoginScreen() {
@@ -39,18 +38,26 @@ export default function LoginScreen() {
     } catch (error) {
       if (isNetworkError(error)) {
         // The server never answered, so nothing here is about these details.
-        setServerError(authCopy.serverUnreachable);
+        setServerError(
+          'We could not reach the server. Check that the API is running and the address in .env is right.'
+        );
       } else if (hasCode(error, 'DATABASE_UNAVAILABLE')) {
         // The server is up but its database is not. That is our outage, and
         // telling the user to "try again shortly" beats blaming their input.
-        setServerError(authCopy.serverDegraded);
+        setServerError(
+          'The server is up but its database is not right now. This is on us — please try again in a moment.'
+        );
       } else if (hasCode(error, 'INVALID_CREDENTIALS')) {
         // Same message for unknown email and wrong password, by design — do not
         // leak which one it was.
-        setServerError(authCopy.invalidCredentials);
+        setServerError('That email and password do not match an account.');
       } else {
         const fields = fieldErrors(error);
-        setServerError(fields.email ?? fields.password ?? authCopy.loginFailed);
+        setServerError(
+          fields.email ??
+            fields.password ??
+            'We could not sign you in just now. Try again in a moment.'
+        );
       }
     } finally {
       setBusy(false);
@@ -76,7 +83,7 @@ export default function LoginScreen() {
 
           <View className="px-6 pt-10">
             <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-              {authCopy.loginEyebrow}
+              {'Sign in'}
             </Text>
 
             <Text className="mt-3 font-display text-[34px] leading-[38px] text-ink-900">
@@ -84,13 +91,13 @@ export default function LoginScreen() {
             </Text>
 
             <Text className="mt-3 max-w-[300px] font-body text-[13px] leading-[19px] text-ink-500">
-              {authCopy.loginSubtitle}
+              {'Pick up where your circle left off — the places you trust, and who has been there.'}
             </Text>
           </View>
 
           <View className="mt-9 gap-6 px-6">
             <AuthField
-              label={authCopy.emailLabel}
+              label={'Email'}
               value={email}
               onChangeText={setEmail}
               onBlur={() => setTouched((t) => ({ ...t, email: true }))}
@@ -104,16 +111,20 @@ export default function LoginScreen() {
 
             <View>
               <PasswordField
-                label={authCopy.passwordLabel}
+                label={'Password'}
                 value={password}
                 onChange={setPassword}
                 onSubmitEditing={submit}
                 error={passwordError}
-                hint={!passwordError && password.length > 0 ? authCopy.passwordHint : null}
+                hint={
+                  !passwordError && password.length > 0
+                    ? 'At least 8 characters, and not a guessable one.'
+                    : null
+                }
               />
 
               <View className="mt-2 self-end">
-                <AuthLink onPress={() => {}}>{authCopy.forgotPassword}</AuthLink>
+                <AuthLink onPress={() => {}}>{'Forgot password?'}</AuthLink>
               </View>
             </View>
           </View>
@@ -130,7 +141,7 @@ export default function LoginScreen() {
 
           <View className="mt-8 px-6">
             <AuthButton
-              label={authCopy.signIn}
+              label={'Sign in'}
               icon="arrow-right"
               onPress={submit}
               disabled={!canSubmit}
@@ -139,10 +150,8 @@ export default function LoginScreen() {
           </View>
 
           <View className="mt-7 flex-row items-center justify-center gap-1.5">
-            <Text className="font-body text-[13px] text-ink-500">{authCopy.noAccount}</Text>
-            <AuthLink onPress={() => router.replace('/(auth)/register')}>
-              {authCopy.createOne}
-            </AuthLink>
+            <Text className="font-body text-[13px] text-ink-500">{'No circle yet?'}</Text>
+            <AuthLink onPress={() => router.replace('/(auth)/register')}>{'Create one'}</AuthLink>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

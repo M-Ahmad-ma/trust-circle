@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Image, Modal, Pressable, Text, View } from 'react-native';
 
-import { absoluteUrl } from '@/api/session';
+import { absoluteUrl, apiBaseUrl } from '@/api/session';
 import type { WirePlace } from '@/api/types';
 import { Stars } from '@/components/Stars';
 
@@ -10,45 +10,52 @@ const TILE = 168;
 
 type ProfilePlacesProps = {
   places: WirePlace[];
+  imageKeys: string[];
   onOpen: (placeId: string) => void;
 };
 
-/** Places derived from experiences actually returned by the API. */
-export function ProfilePlacesGrid({ places, onOpen }: ProfilePlacesProps) {
+export function ProfilePlacesGrid({ places, imageKeys, onOpen }: ProfilePlacesProps) {
+
+
   return (
-    <View className="flex-row flex-wrap px-6">
-      {places.map((place) => (
-        <Pressable
-          key={place.id}
-          onPress={() => onOpen(place.id)}
-          accessibilityRole="button"
-          accessibilityLabel={place.name}
-          className="mb-4 mr-4 overflow-hidden rounded-card border border-hairline bg-paper-50 active:opacity-80"
-          style={{ width: TILE }}>
-          <View className="h-[104px] items-center justify-center bg-surface">
-            <MaterialCommunityIcons name="map-marker-outline" size={22} color="#a03246" />
-          </View>
-          <View className="p-3">
-            <Text numberOfLines={1} className="font-body-semibold text-[12.5px] text-ink-900">
-              {place.name}
-            </Text>
-            <Text numberOfLines={1} className="mt-0.5 font-body text-[10.5px] text-ink-400">
-              {place.category ?? 'Place'}
-              {place.city ? ` · ${place.city}` : ''}
-            </Text>
-            {typeof place.avgRating === 'number' && (
-              <View className="mt-2 flex-row items-center gap-1.5">
-                <Stars rating={place.avgRating} size={10} gap={1} />
-                <Text className="font-body-semibold text-[10.5px] text-ink-700">
-                  {place.avgRating.toFixed(1)}
-                </Text>
-              </View>
-            )}
-          </View>
-        </Pressable>
-      ))}
+    <View className="flex-row flex-wrap gap-1 px-2   pl-3">
+      {places.map((place, index) => {
+
+        const currentPhotoKey = imageKeys[index];
+        return (
+          <Pressable
+            key={place.id}
+            onPress={() => onOpen(place.id)}
+            accessibilityRole="button"
+            accessibilityLabel={place.name}
+            className="mb-4 overflow-hidden rounded-card border border-hairline  active:opacity-80"
+            style={{ width: TILE }}>
+            <View className="h-[104px] items-center justify-center bg-surface">
+              <Image source={{ uri: `${apiBaseUrl()}${currentPhotoKey}` }} className='w-full h-full' />
+            </View>
+            <View className="p-3">
+              <Text numberOfLines={1} className="font-body-semibold text-[12.5px] text-ink-900">
+                {place.name}
+              </Text>
+              <Text numberOfLines={1} className="mt-0.5 font-body text-[10.5px] text-ink-400">
+                {place.category ?? 'Place'}
+                {place.city ? ` · ${place.city}` : ''}
+              </Text>
+              {typeof place.avgRating === 'number' && (
+                <View className="mt-2 flex-row items-center gap-1.5">
+                  <Stars rating={place.avgRating} size={10} gap={1} />
+                  <Text className="font-body-semibold text-[10.5px] text-ink-700">
+                    {place.avgRating.toFixed(1)}
+                  </Text>
+                </View>
+              )
+              }
+            </View>
+          </Pressable>
+        )
+      })}
     </View>
-  );
+  )
 }
 
 type ProfilePhotosProps = {
@@ -133,7 +140,7 @@ function PhotoViewer({
         accessibilityRole="button"
         accessibilityLabel="Close photo"
         className="flex-1 items-center justify-center bg-black/95 px-5">
-        <Pressable onPress={() => {}} className="w-full flex-1 items-center justify-center">
+        <Pressable onPress={() => { }} className="w-full flex-1 items-center justify-center">
           <Image
             source={{ uri }}
             style={{ width: '100%', height: '70%' }}

@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FlowHeader } from '@/components/write/FlowHeader';
 import { StarRatingInput } from '@/components/write/Relationship';
-import { writeCopy } from '@/data';
 import { STEP_ROUTES, useExperienceDraft } from '@/lib/experienceDraft';
 
 const WORDS = ['Not for me', 'It was fine', 'Good', 'Really good', 'Exceptional'];
@@ -20,7 +19,7 @@ export default function RatingStep() {
       <View style={{ paddingTop: insets.top + 8 }}>
         <FlowHeader
           current="rating"
-          closeLabel={writeCopy.closeFlow}
+          closeLabel={'Discard this experience'}
           onClose={() => router.dismissAll()}
         />
       </View>
@@ -31,13 +30,15 @@ export default function RatingStep() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
         <View className="px-5 pt-9">
           <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-            {writeCopy.stepEyebrow}
+            {'New experience'}
           </Text>
           <Text className="mt-3 font-display text-[30px] leading-[35px] text-ink-900">
             How was it, <Text className="font-display-italic text-primary-600">overall</Text>?
           </Text>
           <Text className="mt-3 max-w-[310px] font-body text-[13px] leading-[19px] text-ink-500">
-            {writeCopy.ratingHint}
+            {
+              'One number for the whole visit. Trust Circle does not ask you to score food, service and cleanliness separately.'
+            }
           </Text>
         </View>
 
@@ -53,7 +54,9 @@ export default function RatingStep() {
                 {WORDS[rating - 1]}
               </Text>
             ) : (
-              <Text className="font-body text-[12px] text-ink-300">{writeCopy.tapToRate}</Text>
+              <Text className="font-body text-[12px] text-ink-300">
+                {'Tap a star to rate your visit.'}
+              </Text>
             )}
           </View>
         </View>
@@ -62,10 +65,12 @@ export default function RatingStep() {
         <View className="mt-8 px-5">
           <View className="rounded-card bg-surface p-4">
             <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-              {writeCopy.oneNumberOnly}
+              {'One number, not five'}
             </Text>
             <Text className="mt-2 font-body text-[12px] leading-[18px] text-ink-500">
-              {writeCopy.oneNumberWhy}
+              {
+                'Split ratings turn a memory into a spreadsheet. You get to decide what mattered, and say so in your own words on the next step.'
+              }
             </Text>
           </View>
         </View>
@@ -84,7 +89,7 @@ export default function RatingStep() {
           <Text
             className="font-body-semibold text-[15px]"
             style={{ color: rating > 0 ? '#fdfaf4' : '#f3ecdd' }}>
-            {writeCopy.continueLabel}
+            {'Continue'}
           </Text>
         </Pressable>
       </View>

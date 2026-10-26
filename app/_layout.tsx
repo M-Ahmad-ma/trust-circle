@@ -89,6 +89,16 @@ export default function RootLayout() {
           name="place/[id]"
           options={{ headerShown: false, animation: 'slide_from_right' }}
         />
+        {/*
+          `place/[id]/edit` is its own route, so it does not inherit the
+          `place/[id]` entry above — it fell back to the Stack default and drew
+          the native header. The screen already renders its own back button and
+          title, so the native one stacked a second bar on top of it.
+        */}
+        <Stack.Screen
+          name="place/[id]/edit"
+          options={{ headerShown: false, animation: 'slide_from_right' }}
+        />
         <Stack.Screen
           name="profile/[id]"
           options={{ headerShown: false, animation: 'slide_from_right' }}
@@ -103,6 +113,9 @@ export default function RootLayout() {
         />
         <Stack.Screen name="profile/search" options={{ headerShown: false }} />
         <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
+        {/* Both settings screens draw their own back button and title. */}
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="settings/blocked" options={{ headerShown: false }} />
         <Stack.Screen name="dev/logs" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>

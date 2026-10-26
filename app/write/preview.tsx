@@ -1,23 +1,24 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
-import { experiencesApi, uploadsApi } from '@/api';
+import { AuthUser, experiencesApi, uploadsApi } from '@/api';
 import { hasCode, isApiError } from '@/api/errors';
 import { FlowHeader } from '@/components/write/FlowHeader';
 import { Stars } from '@/components/write/Relationship';
 import { formatVisitDate, relativeVisit } from '@/components/write/VisitCalendar';
 import { STEP_ROUTES, useExperienceDraft } from '@/lib/experienceDraft';
 import { visibilityOption } from '@/theme/relationship';
-import { writeCopy } from '@/data';
+import { me } from '@/api/endpoints/users';
 
 type PublishError =
   | { kind: 'photos'; message: string }
   | { kind: 'visited'; message: string }
   | { kind: 'generic'; message: string };
+
 
 export default function PreviewStep() {
   const insets = useSafeAreaInsets();
@@ -26,6 +27,7 @@ export default function PreviewStep() {
   const [publishing, setPublishing] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<PublishError | null>(null);
+  const [profile, setProfile] = useState<AuthUser>();
 
   const ready =
     draft.placeId !== null &&
@@ -65,7 +67,7 @@ export default function PreviewStep() {
           continue;
         }
 
-        setProgress(writeCopy.uploadingPhoto(index + 1, draft.photos.length));
+        setProgress(`Uploading photo ${index + 1} of ${draft.photos.length}…`);
         const uploaded = await uploadsApi.uploadPhoto({
           uri: photo.localUri,
           name: photo.name,
@@ -76,7 +78,7 @@ export default function PreviewStep() {
         photoIds.push(uploaded.id);
       }
 
-      setProgress(editing ? writeCopy.savingExperience : writeCopy.creatingExperience);
+      setProgress(editing ? 'Saving…' : 'Publishing…');
 
       const fields = {
         // Must be a JSON number, not a string.
@@ -120,38 +122,51 @@ export default function PreviewStep() {
 
   const amended = useMemo(
     () => [
-      { step: 'place', label: writeCopy.editPlace, detail: writeCopy.chosen },
+      { step: 'place', label: 'Place', detail: 'Chosen' },
       {
         step: 'photo',
-        label: writeCopy.editPhotos,
+        label: 'Photos',
         detail:
           draft.photos.length > 0
             ? `${draft.photos.length} · ${uploadedCount} uploaded`
-            : writeCopy.noPhotosYet,
+            : 'None yet',
       },
-      { step: 'rating', label: writeCopy.editRating, detail: rating ? `${rating}.0` : '—' },
+      { step: 'rating', label: 'Rating', detail: rating ? `${rating}.0` : '—' },
       {
         step: 'date',
-        label: writeCopy.editVisitDate,
+        label: 'Visited',
         detail: draft.visitedAt ? formatVisitDate(draft.visitedAt) : '—',
       },
-      { step: 'visibility', label: writeCopy.editAudience, detail: audience?.label ?? '—' },
+      { step: 'visibility', label: 'Audience', detail: audience?.label ?? '—' },
     ],
     [draft.photos.length, uploadedCount, rating, draft.visitedAt, audience]
   );
+
+  useEffect(() => {
+    const profileData = async () => {
+      try {
+        let res = await me();
+        setProfile(res);
+      } catch {
+        return;
+      }
+    };
+
+    profileData();
+  }, []);
 
   if (!ready) {
     return (
       <View className="flex-1 items-center justify-center gap-3 bg-paper-100 px-8">
         <Text className="text-center font-display text-[20px] text-ink-900">
-          {writeCopy.previewIncomplete}
+          {'Something is missing from your experience.'}
         </Text>
         <Pressable
           onPress={() => router.push(STEP_ROUTES.place)}
           accessibilityRole="button"
           className="active:opacity-60">
           <Text className="font-body-semibold text-[13px] text-primary-600">
-            {writeCopy.backToStart}
+            {'Back to the start'}
           </Text>
         </Pressable>
       </View>
@@ -163,7 +178,7 @@ export default function PreviewStep() {
       <View style={{ paddingTop: insets.top + 8 }}>
         <FlowHeader
           current="preview"
-          closeLabel={writeCopy.closeFlow}
+          closeLabel={'Discard this experience'}
           onClose={() => router.dismissAll()}
         />
       </View>
@@ -174,13 +189,13 @@ export default function PreviewStep() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 130 }}>
         <View className="px-5 pt-8">
           <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-            {editing ? writeCopy.editEyebrow : writeCopy.previewEyebrow}
+            {editing ? 'Edit experience' : 'Almost there'}
           </Text>
           <Text className="mt-2.5 font-display text-[24px] leading-[30px] text-ink-900">
-            {editing ? writeCopy.editTitle : writeCopy.previewTitle}
+            {editing ? 'Change what you said.' : 'This is what your circle will see.'}
           </Text>
           <Text className="mt-2 max-w-[320px] font-body text-[12.5px] leading-[18px] text-ink-500">
-            {writeCopy.previewSubtitle}
+            {'Read it once as if a friend sent it to you. That is exactly how it will arrive.'}
           </Text>
         </View>
 
@@ -188,20 +203,18 @@ export default function PreviewStep() {
           <View className="overflow-hidden rounded-card border border-hairline bg-paper-50">
             <View className="flex-row items-center gap-2.5 px-4 pt-4">
               <Avatar
-                user={{ id: 'me', name: writeCopy.yourName }}
+                user={{ id: 'me', avatarPath: profile?.avatarPath }}
                 size={38}
                 ringColor="#fdfaf4"
                 ringWidth={2}
               />
               <View className="flex-1">
-                <Text className="font-body-semibold text-[13.5px] text-ink-900">
-                  {writeCopy.yourName}
-                </Text>
+                <Text className="font-body-semibold text-[13.5px] text-ink-900">{'You'}</Text>
                 {/* The relationship badge is deliberately absent here. It is not
                     knowable until the server annotates the card for a given
                     viewer — your own experience reads differently to everyone else. */}
                 <Text className="mt-1 font-body text-[10.5px] text-ink-400">
-                  {writeCopy.visibleTo} {audience?.label}
+                  {'Visible to'} {audience?.label}
                 </Text>
               </View>
               <View className="items-end gap-1.5">
@@ -240,20 +253,20 @@ export default function PreviewStep() {
               {draft.visitedAt && (
                 <SignalRow
                   icon="map-marker-check-outline"
-                  text={`${writeCopy.visitedHere} · ${relativeVisit(draft.visitedAt)}`}
+                  text={`${'Visited this location'} · ${relativeVisit(draft.visitedAt)}`}
                 />
               )}
               {draft.photos.length > 0 && (
                 <SignalRow
                   icon="camera-outline"
-                  text={`${draft.photos.length} ${writeCopy.originalPhotos}`}
+                  text={`${draft.photos.length} ${'original photos'}`}
                 />
               )}
             </View>
 
             <View className="mt-4 flex-row items-center justify-between border-t border-hairline px-4 py-3">
               <Text className="font-body-semibold text-3xs uppercase text-ink-300">
-                {writeCopy.experienceLabel}
+                {'Experience'}
               </Text>
               <Text className="font-body text-[11px] text-ink-400">{audience?.audience}</Text>
             </View>
@@ -299,11 +312,7 @@ export default function PreviewStep() {
             className="font-body-semibold text-[15px]"
             style={{ color: publishing ? '#f3ecdd' : '#fdfaf4' }}>
             {progress ??
-              (publishing
-                ? writeCopy.publishing
-                : editing
-                  ? writeCopy.saveChanges
-                  : writeCopy.publish)}
+              (publishing ? 'Publishing…' : editing ? 'Save changes' : 'Publish experience')}
           </Text>
           {!publishing && <MaterialCommunityIcons name="check" size={17} color="#fdfaf4" />}
         </Pressable>
@@ -312,24 +321,33 @@ export default function PreviewStep() {
   );
 }
 
-/** Maps API.md §5 codes onto copy the user can act on. */
 function toPublishError(caught: unknown): PublishError {
   if (hasCode(caught, 'INVALID_PHOTOS') || hasCode(caught, 'PHOTOS_ATTACHED')) {
-    return { kind: 'photos', message: writeCopy.photoAttachFailed };
+    return {
+      kind: 'photos',
+      message:
+        'Your photos could not be attached. Remove one and try again — nothing else you wrote was lost.',
+    };
   }
   if (hasCode(caught, 'VISITED_AT_FUTURE') || hasCode(caught, 'INVALID_VISITED_AT')) {
-    return { kind: 'visited', message: writeCopy.visitDateRejected };
+    return {
+      kind: 'visited',
+      message: 'That visit date was rejected. Pick a date that is today or earlier.',
+    };
   }
   if (hasCode(caught, 'PLACE_NOT_FOUND')) {
-    return { kind: 'generic', message: writeCopy.placeVanished };
+    return { kind: 'generic', message: 'That place is no longer available. Choose another one.' };
   }
   if (hasCode(caught, 'INVALID_TOKEN') || hasCode(caught, 'UNAUTHORIZED')) {
-    return { kind: 'generic', message: writeCopy.sessionExpired };
+    return { kind: 'generic', message: 'Your session expired. Sign in again to publish.' };
   }
   if (isApiError(caught) && caught.code === 'VALIDATION_ERROR') {
     return { kind: 'generic', message: caught.message };
   }
-  return { kind: 'generic', message: writeCopy.publishFailed };
+  return {
+    kind: 'generic',
+    message: 'That did not go through. Your draft is still here — try again.',
+  };
 }
 
 function SignalRow({

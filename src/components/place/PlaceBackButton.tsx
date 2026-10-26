@@ -2,8 +2,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable } from 'react-native';
 
-import { placeCopyApi } from '@/data';
-
 /**
  * Back control for the place detail screen, which has no top bar of its own —
  * its content starts straight into the hero photo.
@@ -21,7 +19,7 @@ export function PlaceBackButton({ topInset }: { topInset: number }) {
     <Pressable
       onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
       accessibilityRole="button"
-      accessibilityLabel={placeCopyApi.back}
+      accessibilityLabel={'Go back'}
       hitSlop={10}
       className="absolute left-4 h-9 w-9 items-center justify-center rounded-full bg-black/40 active:opacity-70"
       style={{ top: topInset + 8 }}>

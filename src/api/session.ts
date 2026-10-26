@@ -209,10 +209,9 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
     // anything, so this must not surface as a credential problem.
     const reason = error instanceof Error ? error.message : String(error);
     const timedOut = error instanceof Error && error.name === 'TimeoutError';
-    log.request.error(
-      `${path} — ${timedOut ? 'timed out' : 'could not reach'} ${BASE_URL}`,
-      { error: reason }
-    );
+    log.request.error(`${path} — ${timedOut ? 'timed out' : 'could not reach'} ${BASE_URL}`, {
+      error: reason,
+    });
     throw new ApiRequestError(0, {
       error: {
         code: 'NETWORK_ERROR',

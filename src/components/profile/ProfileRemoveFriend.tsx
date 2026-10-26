@@ -3,7 +3,6 @@ import { Alert, Pressable, Text, View } from 'react-native';
 
 import { usersApi } from '@/api';
 import { isApiError } from '@/api/errors';
-import { profileCopyApi } from '@/data';
 
 /**
  * Remove-from-Circle control, shown only while the viewer is a direct friend.
@@ -34,12 +33,16 @@ export function ProfileRemoveFriend({
     setNotice(null);
     try {
       await usersApi.removeFriend(userId);
-      setNotice(profileCopyApi.removed);
+      setNotice('Removed from your Circle.');
       onRemoved();
     } catch (error) {
       // A 404 NOT_FRIENDS means the server already considers them gone, which is
       // the outcome we wanted — reconciling beats showing a failure.
-      setNotice(isApiError(error) ? error.message : profileCopyApi.removeFailed);
+      setNotice(
+        isApiError(error)
+          ? error.message
+          : 'We could not remove them just now. Try again in a moment.'
+      );
     } finally {
       setBusy(false);
     }
@@ -47,12 +50,12 @@ export function ProfileRemoveFriend({
 
   const confirm = () => {
     Alert.alert(
-      profileCopyApi.removeConfirmTitle,
-      profileCopyApi.removeConfirmBody,
+      'Remove from your Circle?',
+      'Anything they shared only with their Circle or Extended Circle stops being visible to you. Nothing is deleted, and you can add them again at any time.',
       [
-        { text: profileCopyApi.removeCancel, style: 'cancel' },
+        { text: 'Keep them', style: 'cancel' },
         {
-          text: profileCopyApi.removeConfirmAction,
+          text: 'Remove',
           style: 'destructive',
           onPress: () => void remove(),
         },
@@ -67,12 +70,12 @@ export function ProfileRemoveFriend({
         onPress={confirm}
         disabled={busy}
         accessibilityRole="button"
-        accessibilityLabel={`${profileCopyApi.removeFromCircle} ${userName}`}
+        accessibilityLabel={`${'Remove from Circle'} ${userName}`}
         accessibilityState={{ disabled: busy, busy }}
         className="h-11 items-center justify-center rounded-[12px] border border-danger-500 active:opacity-70"
         style={{ opacity: busy ? 0.5 : 1 }}>
         <Text className="font-body-semibold text-[14px] text-danger-600">
-          {profileCopyApi.removeFromCircle}
+          {'Remove from Circle'}
         </Text>
       </Pressable>
 

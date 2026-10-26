@@ -17,17 +17,20 @@ export const peshawarOverview = {
   pitch: 0,
 };
 
-/** Roughly 380 m across — close enough to read a venue and its neighbours. */
-export const PLACE_FOCUS_ZOOM = 17;
+/**
+ * The frame a place sits in — roughly 1.5 km across on a phone.
+ *
+ * It was 17, which framed about 380 m: a couple of doorways, with the pin
+ * filling the screen and its neighbours off the edge entirely. That is the
+ * wrong scale for reading a map. Dropping to 15 puts the place in its
+ * surroundings — the street it is on, the block around it — while still
+ * naming it, and the map stays pinch-zoomable for anyone who needs closer.
+ */
+export const PLACE_FOCUS_ZOOM = 15;
 
 /**
- * Explore flies to a tapped pin a little wider than the picker does.
- *
- * `PLACE_FOCUS_ZOOM` frames a single venue, which is right when you are
- * dropping a pin but claustrophobic when you are reading the map — the pin
- * filled the screen and its neighbours were off it entirely. At 15 the frame is
- * roughly 1.5 km across, so the place sits in its surroundings rather than
- * alone in them.
+ * Explore flies to a tapped pin at the same frame. It has its own constant so
+ * the two surfaces can drift apart deliberately rather than by accident.
  */
 export const EXPLORE_FOCUS_ZOOM = 15;
 

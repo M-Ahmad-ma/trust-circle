@@ -4,16 +4,19 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { placesApi } from '@/api';
+import { placesApi, uploadsApi } from '@/api';
 import { hasCode } from '@/api/errors';
 import { AuthField } from '@/components/auth/AuthField';
 import { PlaceLocationPicker } from '@/components/PlaceLocationPicker';
+import { PhotoPicker, type PickerPhoto } from '@/components/write/PhotoPicker';
 import { useExperienceDraft } from '@/lib/experienceDraft';
 import { useUserLocation, type Coords } from '@/lib/useUserLocation';
-import { writeCopy } from '@/data';
 
 /** Server cap for `category` — mirrored client-side to avoid a round trip. */
 const CATEGORY_MAX = 60;
+
+/** A place carries a cover and a handful of others, not a full gallery. */
+const MAX_PLACE_PHOTOS = 6;
 
 /**
  * No `lat`/`lng` fields at all. Coordinates come from the map — your own fix, a
@@ -53,6 +56,13 @@ export default function NewPlaceStep() {
   /** Chosen on the map, or null while the pin has not been placed. */
   const [coords, setCoords] = useState<Coords | null>(null);
 
+  /**
+   * The place's own images. They stay local until the place exists, because the
+   * upload needs the place id — so these are picked here and sent the moment
+   * the place comes back from the server.
+   */
+  const [photos, setPhotos] = useState<PickerPhoto[]>([]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -66,7 +76,7 @@ export default function NewPlaceStep() {
     const next: Record<string, string> = {};
     const name = form.name.trim();
 
-    if (name.length === 0) next.name = writeCopy.newPlaceNameRequired;
+    if (name.length === 0) next.name = 'A place needs a name.';
     else if (name.length > 140) next.name = 'That name is too long.';
     // Mirrors the server's INVALID_NAME rule: must contain a letter or number.
     else if (!/[\p{L}\p{N}]/u.test(name)) next.name = 'The name needs a letter or number.';
@@ -80,12 +90,22 @@ export default function NewPlaceStep() {
     return Object.keys(next).length === 0;
   };
 
+  const movePhoto = (from: number, to: number) => {
+    if (to < 0 || to >= photos.length) return;
+    setPhotos((current) => {
+      const next = [...current];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  };
+
   const save = async () => {
     // Coordinates come from the map, and there is no text field to type them
     // into, so this gate is new — and it must block, because the server would
     // otherwise reject the whole form after it looked filled in.
     if (!coords) {
-      setNotice(writeCopy.locationRequired);
+      setNotice('Tap “Use my location”, or type the coordinates.');
       return;
     }
     if (!validate()) return;
@@ -103,14 +123,40 @@ export default function NewPlaceStep() {
         city: form.city.trim() || null,
       });
 
+      /**
+       * The place exists now, so the photos have somewhere to go. Each upload
+       * names the place, which makes the photo the place's own rather than an
+       * experience's — and the first one is its cover.
+       *
+       * A failed upload must not undo the place: it is already created and
+       * already true. So failures are counted and reported on the place screen
+       * rather than thrown away here.
+       */
+      let failed = 0;
+      for (const photo of photos) {
+        try {
+          await uploadsApi.uploadPhoto(
+            { uri: photo.localUri, name: photo.name, type: photo.type },
+            { placeId: result.place.id }
+          );
+        } catch {
+          failed += 1;
+        }
+      }
+
+      const photosFailedParam = failed > 0 ? { photosFailed: String(failed) } : {};
+
       if (isStandalone) {
         // `created: false` means the server fuzzy-matched an existing place
         // within 200 m. Silently landing there would read as "you added this",
         // so the place screen says what actually happened.
         router.replace({
           pathname: '/place/[id]',
-          params: { id: result.place.id },
-          ...(result.created ? {} : { deduped: '1' }),
+          params: {
+            id: result.place.id,
+            ...(result.created ? {} : { deduped: '1' }),
+            ...photosFailedParam,
+          },
         });
         return;
       }
@@ -121,7 +167,7 @@ export default function NewPlaceStep() {
       if (hasCode(error, 'INVALID_NAME')) {
         setErrors({ name: 'The name needs a letter or number.' });
       } else {
-        setNotice(writeCopy.newPlaceFailed);
+        setNotice('That place could not be saved. Try again in a moment.');
       }
     } finally {
       setSaving(false);
@@ -140,14 +186,12 @@ export default function NewPlaceStep() {
           <Pressable
             onPress={() => router.back()}
             accessibilityRole="button"
-            accessibilityLabel={writeCopy.back}
+            accessibilityLabel={'Go back'}
             hitSlop={10}
             className="h-9 w-9 items-center justify-center rounded-pill active:opacity-60">
             <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
           </Pressable>
-          <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-            {writeCopy.newPlaceEyebrow}
-          </Text>
+          <Text className="font-body-semibold text-3xs uppercase text-ink-400">{'New place'}</Text>
           <View className="h-9 w-9" />
         </View>
 
@@ -186,13 +230,15 @@ export default function NewPlaceStep() {
               <Text className="font-display-italic text-primary-600">yet</Text>.
             </Text>
             <Text className="mt-3 font-body text-[12.5px] leading-[18px] text-ink-500">
-              {isStandalone ? writeCopy.newPlaceHintStandalone : writeCopy.newPlaceHint}
+              {isStandalone
+                ? 'Add the details you know. You can write your experience about it afterwards.'
+                : 'Add the details you know. Location can be rough — you can correct it later.'}
             </Text>
           </View>
 
           <View className="mt-8 gap-6 px-5">
             <AuthField
-              label={writeCopy.newPlaceNameLabel}
+              label={'Place name'}
               value={form.name}
               onChangeText={(name) => set('name', name)}
               error={errors.name || null}
@@ -202,18 +248,17 @@ export default function NewPlaceStep() {
             />
 
             <AuthField
-              label={writeCopy.newPlaceCategoryLabel}
+              label={'Category'}
               value={form.category}
               onChangeText={(category) => set('category', category)}
               error={errors.category || null}
-              hint={writeCopy.newPlaceCategoryHint}
               placeholder="cafe"
               autoCapitalize="none"
               returnKeyType="next"
             />
 
             <AuthField
-              label={writeCopy.newPlaceAddressLabel}
+              label={'Address'}
               value={form.address}
               onChangeText={(address) => set('address', address)}
               placeholder="23 Saddar Bazaar"
@@ -221,7 +266,7 @@ export default function NewPlaceStep() {
             />
 
             <AuthField
-              label={writeCopy.newPlaceCityLabel}
+              label={'City'}
               value={form.city}
               onChangeText={(city) => set('city', city)}
               placeholder="Peshawar"
@@ -229,12 +274,42 @@ export default function NewPlaceStep() {
             />
           </View>
 
+          {/* The place's own images. Same picker as the write flow — the same
+              validation, the same cover rule, the same ordering. */}
+          <View className="mt-9 px-5">
+            <Text className="font-body-semibold text-3xs uppercase text-ink-400">{'Photos'}</Text>
+            <Text className="mt-2 max-w-[320px] font-body text-[11.5px] leading-[17px] text-ink-500">
+              {'Pictures of the place itself. The first one becomes its cover image.'}
+            </Text>
+
+            <View className="mt-4">
+              <PhotoPicker
+                photos={photos}
+                max={MAX_PLACE_PHOTOS}
+                orderHint={
+                  'The first photo is the cover. Use the arrows on a photo to change its order.'
+                }
+                emptyNote={
+                  'Photos are optional, but a place with a cover is far easier to recognise on the map.'
+                }
+                onAdd={(added) =>
+                  setPhotos((current) => [...current, ...added].slice(0, MAX_PLACE_PHOTOS))
+                }
+                onRemove={(index) => setPhotos((current) => current.filter((_, i) => i !== index))}
+                onMove={movePhoto}
+                onRemoveAll={() => setPhotos([])}
+              />
+            </View>
+          </View>
+
           {/* API dedup note — the honest version of why this form warns you. */}
           <View className="mt-7 px-5">
             <View className="flex-row gap-2.5 rounded-card bg-surface p-4">
               <MaterialCommunityIcons name="link-variant" size={15} color="#6b6058" />
               <Text className="flex-1 font-body text-[11px] leading-[17px] text-ink-500">
-                {writeCopy.dedupNote}
+                {
+                  'If a similar place already exists nearby, Trust Circle will point you at it instead of creating a duplicate.'
+                }
               </Text>
             </View>
           </View>
@@ -264,7 +339,7 @@ export default function NewPlaceStep() {
           <Text
             className="font-body-semibold text-[15px]"
             style={{ color: saving ? '#f3ecdd' : '#fdfaf4' }}>
-            {saving ? writeCopy.saving : writeCopy.addPlace}
+            {saving ? 'Saving…' : 'Add place'}
           </Text>
         </Pressable>
       </View>

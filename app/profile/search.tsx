@@ -18,7 +18,6 @@ import type { SlimUser } from '@/api/types';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { RelationshipBadge } from '@/components/write/Relationship';
-import { peopleCopy } from '@/data';
 
 type Row = {
   user: SlimUser;
@@ -52,7 +51,7 @@ export default function PeopleSearchScreen() {
     try {
       setRows(await usersApi.searchUsers(trimmed));
     } catch {
-      setError(peopleCopy.searchFailed);
+      setError('We could not search for people just now.');
     } finally {
       setLoading(false);
     }
@@ -78,7 +77,7 @@ export default function PeopleSearchScreen() {
                   ...row,
                   relationship: {
                     type: 'direct_friend',
-                    label: peopleCopy.requestSent,
+                    label: 'Request sent. They will see it next time they open the app.',
                   },
                 }
               : row
@@ -86,18 +85,22 @@ export default function PeopleSearchScreen() {
       );
     } catch (caught) {
       if (hasCode(caught, 'REQUEST_ALREADY_SENT')) {
-        setNotice(peopleCopy.requestSent);
+        setNotice('Request sent. They will see it next time they open the app.');
       } else if (hasCode(caught, 'ALREADY_FRIENDS')) {
-        setNotice(peopleCopy.alreadyFriends);
+        setNotice('You are already in their circle.');
       } else if (hasCode(caught, 'REQUEST_ALREADY_RECEIVED')) {
         // API.md §4: details.requestId unlocks Accept/Decline instead.
-        setNotice(requestIdFrom(caught) ? peopleCopy.theySentYouRequest : peopleCopy.cannotRequest);
+        setNotice(
+          requestIdFrom(caught)
+            ? 'They have already sent you a request — accept it from your Circle screen.'
+            : 'That request could not be sent.'
+        );
       } else if (hasCode(caught, 'BLOCKED') || hasCode(caught, 'YOU_BLOCKED_THEM')) {
-        setNotice(peopleCopy.blocked);
+        setNotice('You cannot connect with this person.');
       } else if (isApiError(caught)) {
         setNotice(caught.message);
       } else {
-        setNotice(peopleCopy.requestFailed);
+        setNotice('That request could not be sent. Try again in a moment.');
       }
     } finally {
       setActing(null);
@@ -116,13 +119,13 @@ export default function PeopleSearchScreen() {
           <Pressable
             onPress={() => router.back()}
             accessibilityRole="button"
-            accessibilityLabel={peopleCopy.back}
+            accessibilityLabel={'Go back'}
             hitSlop={10}
             className="h-10 w-10 items-center justify-center active:opacity-60">
             <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
           </Pressable>
           <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-            {peopleCopy.title}
+            {'Find people'}
           </Text>
           <View className="h-10 w-10" />
         </View>
@@ -138,7 +141,7 @@ export default function PeopleSearchScreen() {
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder={peopleCopy.placeholder}
+                placeholder={'Search by name'}
                 placeholderTextColor="#b8a37c"
                 autoCorrect={false}
                 autoFocus={focus === '1'}
@@ -164,8 +167,10 @@ export default function PeopleSearchScreen() {
             <EmptyState
               icon="account-search-outline"
               tone="sand"
-              title={peopleCopy.startTitle}
-              body={peopleCopy.startBody}
+              title={'Find the people you trust'}
+              body={
+                'Search by name. Trust Circle shows only what you are allowed to see, so blocked people and your own account never appear.'
+              }
             />
           )}
 
@@ -174,7 +179,7 @@ export default function PeopleSearchScreen() {
               icon="account-search-outline"
               tone="sand"
               title={`Nobody matches “${query.trim()}”`}
-              body={peopleCopy.noResultsBody}
+              body={'Try a different spelling, or fewer letters.'}
             />
           )}
 
@@ -221,7 +226,7 @@ export default function PeopleSearchScreen() {
                         accessibilityLabel={`Add ${row.user.name} to your circle`}
                         className="rounded-pill border border-primary-600 px-3 py-1.5 active:bg-rose-100">
                         <Text className="font-body-semibold text-[11px] text-primary-600">
-                          {acting === row.user.id ? '…' : peopleCopy.add}
+                          {acting === row.user.id ? '…' : 'Add'}
                         </Text>
                       </Pressable>
                     )}

@@ -4,7 +4,6 @@ import { Pressable, Text, View } from 'react-native';
 import { usersApi } from '@/api';
 import { hasCode, isApiError, requestIdFrom } from '@/api/errors';
 import type { Relationship } from '@/api/types';
-import { peopleCopy, profileCopyApi } from '@/data';
 
 /**
  * Add-to-Circle control for someone else's profile.
@@ -53,21 +52,25 @@ export function ProfileAddFriend({
     setNotice(null);
     try {
       await usersApi.sendFriendRequest(userId);
-      setNotice(peopleCopy.requestSent);
+      setNotice('Request sent. They will see it next time they open the app.');
     } catch (error) {
       if (hasCode(error, 'REQUEST_ALREADY_SENT')) {
-        setNotice(peopleCopy.requestSent);
+        setNotice('Request sent. They will see it next time they open the app.');
       } else if (hasCode(error, 'REQUEST_ALREADY_RECEIVED')) {
-        setNotice(requestIdFrom(error) ? peopleCopy.theySentYouRequest : peopleCopy.cannotRequest);
+        setNotice(
+          requestIdFrom(error)
+            ? 'They have already sent you a request — accept it from your Circle screen.'
+            : 'That request could not be sent.'
+        );
       } else if (hasCode(error, 'ALREADY_FRIENDS')) {
-        setNotice(peopleCopy.alreadyFriends);
+        setNotice('You are already in their circle.');
         onBecameFriend?.();
       } else if (hasCode(error, 'BLOCKED') || hasCode(error, 'YOU_BLOCKED_THEM')) {
-        setNotice(peopleCopy.blocked);
+        setNotice('You cannot connect with this person.');
       } else if (isApiError(error)) {
         setNotice(error.message);
       } else {
-        setNotice(peopleCopy.requestFailed);
+        setNotice('That request could not be sent. Try again in a moment.');
       }
     } finally {
       setBusy(false);
@@ -80,12 +83,12 @@ export function ProfileAddFriend({
         onPress={() => void send()}
         disabled={busy}
         accessibilityRole="button"
-        accessibilityLabel={`${profileCopyApi.addToCircle} ${userName}`}
+        accessibilityLabel={`${'Add to Circle'} ${userName}`}
         accessibilityState={{ disabled: busy, busy }}
         className="h-11 items-center justify-center rounded-[12px] border border-primary-600 active:bg-rose-100"
         style={{ opacity: busy ? 0.5 : 1 }}>
         <Text className="font-body-semibold text-[14px] text-primary-600">
-          {busy ? '…' : profileCopyApi.addToCircle}
+          {busy ? '…' : 'Add to Circle'}
         </Text>
       </Pressable>
 

@@ -7,7 +7,6 @@ import { Avatar } from '@/components/Avatar';
 import { Stars } from '@/components/Stars';
 import { RelationshipBadge } from '@/components/write/Relationship';
 import { formatVisitDate } from '@/components/write/VisitCalendar';
-import { exploreCopy } from '@/data';
 
 type ExperienceSheetProps = {
   experience: ExperienceCard;
@@ -78,7 +77,7 @@ export function ExperienceSheet({
           {place.name}
         </Text>
         <Text numberOfLines={1} className="mt-0.5 font-body text-[11.5px] text-ink-500">
-          {place.category ?? exploreCopy.place}
+          {place.category ?? 'Place'}
           {place.city ? ` · ${place.city}` : ''}
           {distance ? ` · ${distance}` : ''}
         </Text>
@@ -113,9 +112,7 @@ export function ExperienceSheet({
           onPress={onOpenPlace}
           accessibilityRole="button"
           className="h-11 flex-1 items-center justify-center rounded-card border border-primary-600 active:bg-rose-100">
-          <Text className="font-body-semibold text-[13.5px] text-primary-600">
-            {exploreCopy.viewPlace}
-          </Text>
+          <Text className="font-body-semibold text-[13.5px] text-primary-600">{'View place'}</Text>
         </Pressable>
 
         <Pressable
@@ -123,7 +120,7 @@ export function ExperienceSheet({
           accessibilityRole="button"
           className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-card bg-primary-600 active:bg-primary-700">
           <Text className="font-body-semibold text-[13.5px] text-primary-fg">
-            {exploreCopy.openExperience}
+            {'Open experience'}
           </Text>
           <MaterialCommunityIcons name="arrow-right" size={14} color="#fdfaf4" />
         </Pressable>
@@ -146,7 +143,7 @@ function ScrollableThumbs({
           key={photo.id}
           onPress={onPress}
           accessibilityRole="imagebutton"
-          accessibilityLabel={exploreCopy.openExperience}
+          accessibilityLabel={'Open experience'}
           className="overflow-hidden rounded-[8px] bg-surface active:opacity-70">
           <Image
             source={{ uri: photo.uri }}

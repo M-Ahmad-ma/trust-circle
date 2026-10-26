@@ -6,6 +6,7 @@ import { Avatar } from '@/components/Avatar';
 import { Stars } from '@/components/Stars';
 import { RelationshipBadge } from '@/components/write/Relationship';
 import { formatVisitDate } from '@/components/write/VisitCalendar';
+import { MaterialIcons } from '@expo/vector-icons';
 
 /**
  * An experience exactly as the API returned it — reviewer, viewer-relative
@@ -94,7 +95,8 @@ export function ExperienceRow({
         <Text className="font-body text-[10.5px] uppercase tracking-widest text-ink-300">
           {formatVisitDate(experience.visitedAt)}
         </Text>
-        {onOpen && <Text className="font-body-semibold text-[11.5px] text-primary-600">Open</Text>}
+        <MaterialIcons name="chevron-right" size={19} color='#a03246' />
+        {/* {onOpen && <Text className="font-body-semibold text-[11.5px] text-primary-600">Open</Text>} */}
       </View>
     </Pressable>
   );

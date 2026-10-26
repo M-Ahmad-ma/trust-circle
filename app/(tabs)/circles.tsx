@@ -49,10 +49,10 @@ function SuggestionSection({
   const shown = !needle
     ? items
     : items.filter(
-        (suggestion) =>
-          suggestion.user.name.toLowerCase().includes(needle) ||
-          (suggestion.user.bio ?? '').toLowerCase().includes(needle)
-      );
+      (suggestion) =>
+        suggestion.user.name.toLowerCase().includes(needle) ||
+        (suggestion.user.bio ?? '').toLowerCase().includes(needle)
+    );
 
   const suggest = async (user: UserSuggestion['user']) => {
     setSuggesting(user.id);
@@ -102,17 +102,6 @@ function SuggestionSection({
 
       {status === 'error' && <ErrorState label={errorMessage} onRetry={onRetry} />}
 
-      {/* Only when there is something to filter — a search box above an empty
-          list is noise. `className` replaces CircleSearch's own `mx-4 mt-6` so
-          the field lines up with the heading and cards in this padded section. */}
-      {settled && items.length > 0 && (
-        <CircleSearch
-          value={search}
-          placeholder={'Search these people'}
-          onChange={setSearch}
-          className="mt-4 flex-row items-center rounded-pill border border-border bg-paper-50 px-4"
-        />
-      )}
 
       {settled && items.length === 0 && (
         <EmptyState

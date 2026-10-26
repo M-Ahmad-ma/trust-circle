@@ -203,7 +203,7 @@ export default function ExploreScreen() {
               />
             )}
 
-            <ViewModeToggle mode={mode} onModeChange={setMode} />
+            {/* <ViewModeToggle mode={mode} onModeChange={setMode} /> */}
 
             {mode === 'map' && (
               <ExploreLayerToggle

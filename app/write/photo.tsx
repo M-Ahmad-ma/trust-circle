@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { uploadsApi } from '@/api';
 import { FlowHeader } from '@/components/write/FlowHeader';
 import { PhotoPicker } from '@/components/write/PhotoPicker';
 import {
@@ -12,13 +14,59 @@ import {
 } from '@/lib/experienceDraft';
 
 /**
- * Photos are uploaded on publish, not here — so this step only collects local
- * files. The previous sample-image strip is gone on purpose: those are bundled
- * JPEGs with no upload id, so they could never be attached to an experience.
+ * A review needs at least one photo. The upload begins the moment a file is
+ * picked — not at publish — so the bytes are already moving while the person
+ * writes the rest of the experience, and each tile shows whether its own file
+ * has landed. There is deliberately no "skip": the button does not unlock until
+ * one photo is on the server.
  */
 export default function PhotoStep() {
   const insets = useSafeAreaInsets();
   const { draft, dispatch } = useExperienceDraft();
+
+  const uploadOne = useCallback(
+    async (photo: DraftPhoto) => {
+      try {
+        const uploaded = await uploadsApi.uploadPhoto({
+          uri: photo.localUri,
+          name: photo.name,
+          type: photo.type,
+        });
+        dispatch({ type: 'markUploaded', localId: photo.localId, uploadId: uploaded.id });
+      } catch {
+        dispatch({
+          type: 'markUploadFailed',
+          localId: photo.localId,
+          message: 'That photo did not upload.',
+        });
+      }
+    },
+    [dispatch]
+  );
+
+  /**
+   * Every accepted file starts at once. The picker has already compressed the
+   * image and `MAX_PHOTOS` bounds the burst at ten, so a queue would only add
+   * latency to files that are small enough to travel together.
+   */
+  const addPhotos = (added: readonly { localUri: string; name: string; type: string }[]) => {
+    const batch = Date.now();
+    const drafts: DraftPhoto[] = added.map((photo, index) => ({
+      ...photo,
+      localId: `${batch}-${index}-${photo.localUri}`,
+      uploading: true,
+    }));
+
+    for (const photo of drafts) dispatch({ type: 'addPhoto', photo });
+    for (const photo of drafts) void uploadOne(photo);
+  };
+
+  const retry = (index: number) => {
+    const photo = draft.photos[index];
+    if (!photo || photo.uploading) return;
+    dispatch({ type: 'markUploadStarted', localId: photo.localId });
+    void uploadOne(photo);
+  };
 
   const removeAll = () => {
     for (let i = draft.photos.length - 1; i >= 0; i -= 1) {
@@ -26,13 +74,27 @@ export default function PhotoStep() {
     }
   };
 
+  const readyCount = draft.photos.filter((photo) => photo.uploadId).length;
+  const uploadingCount = draft.photos.filter((photo) => photo.uploading).length;
+  const failedCount = draft.photos.filter((photo) => !photo.uploading && photo.uploadError).length;
+
+  const canContinue = readyCount > 0 && uploadingCount === 0;
+  const buttonLabel =
+    uploadingCount > 0
+      ? `Uploading ${readyCount} of ${draft.photos.length}…`
+      : draft.photos.length === 0
+        ? 'Add a photo to continue'
+        : readyCount === 0 && failedCount > 0
+          ? 'Retry the failed photo'
+          : 'Continue';
+
   return (
     <View className="flex-1 bg-paper-100">
       <View style={{ paddingTop: insets.top + 8 }}>
         <FlowHeader
           current="photo"
-          closeLabel={'Discard this experience'}
-          onClose={() => router.dismissAll()}
+          closeLabel="Discard this experience"
+          onClose={() => router.replace('/(tabs)/')}
         />
       </View>
 
@@ -41,16 +103,13 @@ export default function PhotoStep() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
         <View className="px-5 pt-9">
-          <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-            {'Optional'}
-          </Text>
+          <Text className="font-body-semibold text-2xs uppercase text-primary-600">Required</Text>
           <Text className="mt-3 font-display text-[30px] leading-[35px] text-ink-900">
             Show what you <Text className="font-display-italic text-primary-600">experienced</Text>.
           </Text>
           <Text className="mt-3 max-w-[320px] font-body text-[13px] leading-[19px] text-ink-500">
-            {
-              'Photos are the difference between a claim and a memory. Add as many as you like, or none at all.'
-            }
+            At least one photo is required. Add as many as you like — the first one becomes the
+            cover.
           </Text>
         </View>
 
@@ -58,20 +117,13 @@ export default function PhotoStep() {
           <PhotoPicker
             photos={draft.photos}
             max={MAX_PHOTOS}
-            orderHint={
-              'The first photo is the cover. Use the arrows on a photo to change its order.'
-            }
-            emptyNote={
-              'Photos make an experience worth trusting, but they are not required. You can publish without one.'
-            }
-            onAdd={(added) => {
-              for (const photo of added) {
-                dispatch({ type: 'addPhoto', photo: photo as DraftPhoto });
-              }
-            }}
+            orderHint="The first photo is the cover. Use the arrows on a photo to change its order."
+            emptyNote="Add at least one photo before you continue."
+            onAdd={addPhotos}
             onRemove={(index) => dispatch({ type: 'removePhotoAt', index })}
             onMove={(from, to) => dispatch({ type: 'movePhoto', from, to })}
             onRemoveAll={removeAll}
+            onRetry={retry}
           />
         </View>
       </ScrollView>
@@ -81,11 +133,19 @@ export default function PhotoStep() {
         style={{ paddingBottom: Math.max(insets.bottom, 14), paddingTop: 12 }}>
         <Pressable
           onPress={() => router.push(STEP_ROUTES.rating)}
+          disabled={!canContinue}
           accessibilityRole="button"
-          className="items-center justify-center rounded-card bg-primary-600 active:opacity-90"
-          style={{ height: 52 }}>
-          <Text className="font-body-semibold text-[15px] text-primary-fg">
-            {draft.photos.length > 0 ? 'Continue' : 'Skip photos for now'}
+          accessibilityState={{ disabled: !canContinue, busy: uploadingCount > 0 }}
+          className="flex-row items-center justify-center gap-2 rounded-card active:opacity-90"
+          style={{
+            height: 52,
+            backgroundColor: canContinue ? '#a03246' : '#d9cbb2',
+          }}>
+          {uploadingCount > 0 && <ActivityIndicator color="#f3ecdd" size="small" />}
+          <Text
+            className="font-body-semibold text-[15px]"
+            style={{ color: canContinue ? '#fdfaf4' : '#f3ecdd' }}>
+            {buttonLabel}
           </Text>
         </Pressable>
       </View>

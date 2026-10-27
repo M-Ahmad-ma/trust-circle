@@ -6,14 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { experiencesApi } from '@/api';
+import { experiencesApi, placesApi } from '@/api';
 import { hasCode } from '@/api/errors';
-import type { ExperienceDetail } from '@/api/types';
+import type { ExperienceCard, ExperienceDetail, WirePlace } from '@/api/types';
 import { absoluteUrl } from '@/api/session';
 import { Avatar } from '@/components/Avatar';
 import { Stars } from '@/components/Stars';
+import { RelatedExperiences, RelatedPlacesRail } from '@/components/related/RelatedContent';
 import { RelationshipBadge } from '@/components/write/Relationship';
 import { formatVisitDate, relativeVisit } from '@/components/write/VisitCalendar';
+import { useApiQuery } from '@/lib/useApiQuery';
 
 type State =
   | { kind: 'loading' }
@@ -31,6 +33,37 @@ export default function ExperienceScreen() {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [retryKey, setRetryKey] = useState(0);
   const [deleting, setDeleting] = useState(false);
+
+  const anchorPlaceId = state.kind === 'ready' ? state.experience.place.id : null;
+
+  /**
+   * Relatedness is anchored on the experience's place. `atPlace` supplies the
+   * other write-ups of the same place; the related endpoint supplies nearby
+   * places and what was written there. Both are separate requests so a failure
+   * in either can never hide the experience itself.
+   */
+  const atPlace = useApiQuery<ExperienceCard[]>(
+    () => experiencesApi.listPlaceExperiences(anchorPlaceId!, { limit: 8 }),
+    {
+      key: `experience-at-place:${anchorPlaceId ?? 'none'}`,
+      enabled: anchorPlaceId !== null,
+      isEmpty: () => false,
+    }
+  );
+
+  const related = useApiQuery(() => placesApi.getPlaceRelated(anchorPlaceId!), {
+    key: `experience-related:${anchorPlaceId ?? 'none'}`,
+    enabled: anchorPlaceId !== null,
+    errorMessage: 'We could not load related content.',
+    isEmpty: (content) => content.places.length === 0 && content.experiences.length === 0,
+  });
+
+  const moreAtPlace = (atPlace.data ?? [])
+    .filter((experience) => experience.id !== (state.kind === 'ready' ? state.experience.id : ''))
+    .slice(0, 4);
+  const relatedPlaces: WirePlace[] = related.status === 'ready' ? related.data.places : [];
+  const nearbyExperiences: ExperienceCard[] =
+    related.status === 'ready' ? related.data.experiences : [];
 
   useEffect(() => {
     if (!id) return;
@@ -111,18 +144,18 @@ export default function ExperienceScreen() {
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
           accessibilityRole="button"
-          accessibilityLabel={'Go back'}
+          accessibilityLabel="Go back"
           hitSlop={10}
           className="h-10 w-10 items-center justify-center active:opacity-60">
           <Text className="font-display text-[24px] text-ink-800">‹</Text>
         </Pressable>
-        <Text className="font-body-semibold text-3xs uppercase text-ink-400">{'Experience'}</Text>
+        <Text className="font-body-semibold text-3xs uppercase text-ink-400">Experience</Text>
         <View className="h-10 w-10" />
       </View>
 
       {state.kind === 'loading' && (
         <View className="flex-1 items-center justify-center">
-          <Text className="font-body text-[12px] text-ink-400">{'Loading experience…'}</Text>
+          <Text className="font-body text-[12px] text-ink-400">Loading experience…</Text>
         </View>
       )}
 
@@ -152,9 +185,7 @@ export default function ExperienceScreen() {
                 }}
                 accessibilityRole="button"
                 className="active:opacity-60">
-                <Text className="font-body-semibold text-[13px] text-primary-600">
-                  {'Try again'}
-                </Text>
+                <Text className="font-body-semibold text-[13px] text-primary-600">Try again</Text>
               </Pressable>
             )}
             <Pressable
@@ -162,7 +193,7 @@ export default function ExperienceScreen() {
               accessibilityRole="button"
               className="active:opacity-60">
               <Text className="font-body-semibold text-[13px] text-primary-600">
-                {'Back to the map'}
+                Back to the map
               </Text>
             </Pressable>
           </View>
@@ -176,6 +207,9 @@ export default function ExperienceScreen() {
             onEdit={startEdit}
             onDelete={confirmDelete}
             deleting={deleting}
+            moreAtPlace={moreAtPlace}
+            relatedPlaces={relatedPlaces}
+            nearbyExperiences={nearbyExperiences}
           />
 
           {/* The primary action is pinned rather than left at the end of the
@@ -189,9 +223,7 @@ export default function ExperienceScreen() {
               onPress={() => router.push(`/place/${state.experience.place.id}`)}
               accessibilityRole="button"
               className="h-12 items-center justify-center rounded-card border border-primary-600 active:bg-rose-100">
-              <Text className="font-body-semibold text-[14px] text-primary-600">
-                {'View place'}
-              </Text>
+              <Text className="font-body-semibold text-[14px] text-primary-600">View place</Text>
             </Pressable>
           </View>
         </>
@@ -205,11 +237,17 @@ function ExperienceBody({
   onEdit,
   onDelete,
   deleting,
+  moreAtPlace,
+  relatedPlaces,
+  nearbyExperiences,
 }: {
   experience: ExperienceDetail;
   onEdit: () => void;
   onDelete: () => void;
   deleting: boolean;
+  moreAtPlace: ExperienceCard[];
+  relatedPlaces: WirePlace[];
+  nearbyExperiences: ExperienceCard[];
 }) {
   const { place, reviewer, relationship } = experience;
 
@@ -290,10 +328,10 @@ function ExperienceBody({
         <View className="mt-6 gap-2 border-t border-hairline pt-4">
           <Row
             icon="calendar-check-outline"
-            text={`${'Visited'} ${formatVisitDate(experience.visitedAt)} · ${relativeVisit(experience.visitedAt)}`}
+            text={`$Visited ${formatVisitDate(experience.visitedAt)} · ${relativeVisit(experience.visitedAt)}`}
           />
           {resolvedPhotos.length > 0 && (
-            <Row icon="camera-outline" text={`${resolvedPhotos.length} ${'original photos'}`} />
+            <Row icon="camera-outline" text={`${resolvedPhotos.length} $original photos`} />
           )}
           <Row icon="map-marker-outline" text={place.address ?? place.city ?? place.name} />
         </View>
@@ -303,17 +341,17 @@ function ExperienceBody({
             <Pressable
               onPress={onEdit}
               accessibilityRole="button"
-              accessibilityLabel={'Edit'}
+              accessibilityLabel="Edit"
               className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-hairline active:opacity-70">
               <MaterialCommunityIcons name="pencil-outline" size={15} color="#6b6058" />
-              <Text className="font-body-semibold text-[13px] text-ink-700">{'Edit'}</Text>
+              <Text className="font-body-semibold text-[13px] text-ink-700">Edit</Text>
             </Pressable>
 
             <Pressable
               onPress={onDelete}
               disabled={deleting}
               accessibilityRole="button"
-              accessibilityLabel={'Delete'}
+              accessibilityLabel="Delete"
               accessibilityState={{ disabled: deleting, busy: deleting }}
               className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-danger-500 active:opacity-70"
               style={{ opacity: deleting ? 0.5 : 1 }}>
@@ -325,6 +363,19 @@ function ExperienceBody({
           </View>
         )}
       </View>
+
+      {moreAtPlace.length > 0 && (
+        <RelatedExperiences title={`More at ${place.name}`} experiences={moreAtPlace} />
+      )}
+      <RelatedPlacesRail places={relatedPlaces} />
+      {nearbyExperiences.length > 0 && (
+        <RelatedExperiences
+          title="Related experiences"
+          subtitle="What people wrote at nearby places."
+          experiences={nearbyExperiences}
+          showPlace
+        />
+      )}
     </ScrollView>
   );
 }

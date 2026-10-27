@@ -1,12 +1,10 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { photo } from '@/theme/photoMap';
-
 /**
- * Atmosphere for the auth screens: a warm wash built from the same generated
- * imagery the app already ships, so the entry points feel like the same object
- * as the product rather than a separate marketing skin.
+ * Atmosphere for the auth screens: a warm wash built from flat tints in the
+ * app's own palette, so the entry points feel like the same object as the
+ * product without shipping decorative photography.
  */
 export function AuthBackdrop() {
   return (
@@ -17,34 +15,44 @@ export function AuthBackdrop() {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Two soft tints bleeding in from the top corners. */}
-      <Image
-        source={photo('janis-cafe-hero-2')}
+      {/* Soft tints bleeding in from the corners — flat shapes at low opacity,
+          not blurred images, so there is no borrowed photograph behind the
+          form. */}
+      <View
         style={{
           position: 'absolute',
           top: -140,
           left: -110,
           width: 420,
           height: 420,
-          opacity: 0.14,
+          borderRadius: 210,
+          backgroundColor: '#c08a2e',
+          opacity: 0.1,
         }}
-        resizeMode="cover"
-        blurRadius={38}
-        accessibilityIgnoresInvertColors
       />
-      <Image
-        source={photo('cheezious-usmanzai-hero-1')}
+      <View
         style={{
           position: 'absolute',
           top: -60,
           right: -140,
           width: 400,
           height: 400,
-          opacity: 0.1,
+          borderRadius: 200,
+          backgroundColor: '#a03246',
+          opacity: 0.08,
         }}
-        resizeMode="cover"
-        blurRadius={44}
-        accessibilityIgnoresInvertColors
+      />
+      <View
+        style={{
+          position: 'absolute',
+          bottom: -120,
+          left: -80,
+          width: 320,
+          height: 320,
+          borderRadius: 160,
+          backgroundColor: '#4a6b52',
+          opacity: 0.06,
+        }}
       />
 
       {/* Fade the wash out toward the form so type stays crisp. */}

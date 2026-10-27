@@ -10,6 +10,8 @@ export interface RequestOptions {
   /** Pass FormData as-is — never set Content-Type, the runtime adds the boundary. */
   form?: FormData;
   signal?: AbortSignal;
+  /** Overrides the 15 s default — uploads need longer than a JSON round trip. */
+  timeoutMs?: number;
 }
 
 /**
@@ -35,7 +37,7 @@ export async function api(
   options: RequestOptions = {},
   retried = false
 ): Promise<Response> {
-  const { method = 'GET', json, form: formBody, signal } = options;
+  const { method = 'GET', json, form: formBody, signal, timeoutMs } = options;
 
   const headers: Record<string, string> = {};
   const token = getAccessToken();
@@ -57,7 +59,7 @@ export async function api(
       method,
       headers,
       body: form,
-      signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: signal ?? AbortSignal.timeout(timeoutMs ?? REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
     // Network-level failure: no response at all. Wrapped rather than rethrown so

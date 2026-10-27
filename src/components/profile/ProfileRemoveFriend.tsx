@@ -70,13 +70,11 @@ export function ProfileRemoveFriend({
         onPress={confirm}
         disabled={busy}
         accessibilityRole="button"
-        accessibilityLabel={`${'Remove from Circle'} ${userName}`}
+        accessibilityLabel={`$Remove from Circle ${userName}`}
         accessibilityState={{ disabled: busy, busy }}
         className="h-11 items-center justify-center rounded-[12px] border border-danger-500 active:opacity-70"
         style={{ opacity: busy ? 0.5 : 1 }}>
-        <Text className="font-body-semibold text-[14px] text-danger-600">
-          {'Remove from Circle'}
-        </Text>
+        <Text className="font-body-semibold text-[14px] text-danger-600">Remove from Circle</Text>
       </Pressable>
 
       {notice && (

@@ -188,7 +188,8 @@ Where did you go?
 
 Show what you experienced.
 
-Photos are optional.
+At least one photo is required. The first one becomes the cover, and the upload
+starts as soon as it is picked.
 
 ### 3. Rating
 

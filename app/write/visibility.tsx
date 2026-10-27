@@ -16,8 +16,8 @@ export default function VisibilityStep() {
       <View style={{ paddingTop: insets.top + 8 }}>
         <FlowHeader
           current="visibility"
-          closeLabel={'Discard this experience'}
-          onClose={() => router.dismissAll()}
+          closeLabel="Discard this experience"
+          onClose={() => router.replace('/(tabs)/')}
         />
       </View>
 
@@ -27,15 +27,14 @@ export default function VisibilityStep() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
         <View className="px-5 pt-9">
           <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-            {'New experience'}
+            New experience
           </Text>
           <Text className="mt-3 font-display text-[30px] leading-[35px] text-ink-900">
             Who should see <Text className="font-display-italic text-primary-600">this</Text>?
           </Text>
           <Text className="mt-3 max-w-[320px] font-body text-[13px] leading-[19px] text-ink-500">
-            {
-              'This is the one decision that decides who gets to read what you are about to write. You can change it later.'
-            }
+            This is the one decision that decides who gets to read what you are about to write. You
+            can change it later.
           </Text>
         </View>
 
@@ -92,7 +91,7 @@ export default function VisibilityStep() {
         {/*   <View className="flex-row gap-2.5 rounded-card bg-surface p-4"> */}
         {/*     <MaterialCommunityIcons name="shield-lock-outline" size={15} color="#6b6058" /> */}
         {/*     <Text className="flex-1 font-body text-[11px] leading-[17px] text-ink-500"> */}
-        {/*       {"Visibility is enforced by the server, not by this app. Whatever you choose here is a request, not a lock."} */}
+        {/* Visibility is enforced by the server, not by this app. Whatever you choose here is a request, not a lock. */}
         {/*     </Text> */}
         {/*   </View> */}
         {/* </View> */}
@@ -111,7 +110,7 @@ export default function VisibilityStep() {
           <Text
             className="font-body-semibold text-[15px]"
             style={{ color: draft.visibility ? '#fdfaf4' : '#f3ecdd' }}>
-            {'Review before sharing'}
+            Review before sharing
           </Text>
         </Pressable>
       </View>

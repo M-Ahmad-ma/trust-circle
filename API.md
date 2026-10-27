@@ -260,7 +260,10 @@ export interface Place {
   distanceM?: number;       // present only when the request had lat/lng
   experienceCount?: number; // detail + search only (viewer-aware)
   avgRating: number | null; // detail + search only; 1 decimal, e.g. 4.3
-  coverPhoto: string | null; // detail + search only (viewer-aware); see §4 Places
+  coverPhoto: string | null; // detail + search only (the place's own photo); see §4 Places
+  canEdit?: boolean;          // detail only — viewer may PATCH this place
+  owner?: { id: string; name: string; avatarPath: string | null } | null;
+                              // detail only — who added it; absent if deleted
 }
 
 /** The card returned everywhere experiences are listed. */
@@ -566,41 +569,33 @@ GET /api/places/search?q=bala&lat=34.015&lng=71.58&radius=5000&category=landmark
 { "data": [ { "id": "5e6dab8b-…", "name": "Bala Hisar Fort", "category": "landmark",
   "address": "Bala Hisar, Peshawar", "city": "Peshawar", "lat": 34.0151, "lng": 71.5805,
   "distanceM": 47.49760892, "experienceCount": 4, "avgRating": 4.3,
-  "coverPhoto": "/uploads/seed-fort-stone-ruins.jpg" } ],
+  "coverPhoto": null } ],
   "meta": { "total": 1, "limit": 20, "offset": 0 } }
 ```
 
 Ordering: distance (if geo) → name similarity (if `q`) → name.
-`experienceCount`/`avgRating`/`coverPhoto` are all **viewer-aware** — they only count
-experiences **visible to the viewer**.
+`experienceCount`/`avgRating` are **viewer-aware** — they only count experiences
+**visible to the viewer**.
 
 Errors: `400 INVALID_GEO` (only one of lat/lng) · `400 VALIDATION_ERROR`.
 
 #### `coverPhoto` — the place cover image
 
-There is no stored cover image on a place. The server derives one: **the first photo of
-the newest experience at that place which the requesting viewer is allowed to see.**
+`coverPhoto` is the place's **own** photo: the one attached to the place itself with
+`POST /uploads` and a `placeId`. The creator's first uploaded photo becomes the cover
+when the place is created. It is the same for every viewer.
 
-It is therefore already access-controlled — a `circle` or `extended` photo can never
-become a cover for someone who may not read it — and it is **viewer-dependent**: the
-same place returns different covers (or `null`) to different viewers. Do not cache it
-across users, and do not use it as an access check.
+Review photos are deliberately **not** used. A photo attached to an experience belongs
+to that reviewer's memory of the place; borrowing it made the cover change with whoever
+posted last and handed the place a face its creator never chose.
 
-`null` is a normal result, not an error: the place may have experiences, but none the
-viewer can see carry a photo. Worked example from the seed data — Saidu Sharif
-(103 km out):
-
-| Viewer | Relationship to authors | `coverPhoto` | `experienceCount` |
-|---|---|---|---|
-| `nadia` | author (`circle`) | `/uploads/seed-mountain-snowy-peak.jpg` | 1 |
-| `hamza` | author (`extended`) | `/uploads/seed-mountain-hiker-trail.jpg` | 1 |
-| `ahmed` | friend-of-friend / none | `null` | 0 |
-| `ayesha` | none | `null` | 0 |
+`null` is a normal result, not an error: the place has no photo of its own yet. The app
+renders it without a hero, and gives its map pin a monogram instead.
 
 Returned by `GET /places/search`, `GET /places/nearby`, `GET /places/:id` and the dedup
-branch of `POST /places`. Not returned on `POST /places` when a place is newly inserted —
-it has no experiences yet, so it is `null`. Not carried on the `place` nested inside an
-`ExperienceCard` (that projection stays small; its own `photos[]` is the source).
+branch of `POST /places`. `null` on `POST /places` when a place is newly inserted — no
+photo has been uploaded yet. Not carried on the `place` nested inside an `ExperienceCard`
+(that projection stays small; its own `photos[]` is the source).
 
 Prefix the base URL as usual — the path is relative.
 
@@ -608,12 +603,32 @@ Prefix the base URL as usual — the path is relative.
 
 #### `GET /api/places/:id` → `200 { "data": Place }`
 
-Place + viewer-aware `experienceCount`/`avgRating`/`coverPhoto` (`avgRating: null` when
-nothing visible). Errors: `404 PLACE_NOT_FOUND`.
+Place + viewer-aware `experienceCount`/`avgRating`, plus the place's own `coverPhoto`
+(`avgRating: null` when nothing visible), the `owner` who added it, and `canEdit` for
+that owner. Errors: `404 PLACE_NOT_FOUND`.
 
 #### `GET /api/places/:id/experiences?limit&offset` → `200`
 
 `{ "data": ExperienceCard[], "meta": { "limit", "offset" } }` — newest-first, visibility-filtered.
+Errors: `404 PLACE_NOT_FOUND`.
+
+#### `GET /api/places/:id/related` → `200`
+
+```json
+{ "data": { "places": Place[], "experiences": ExperienceCard[] },
+  "meta": { "radiusM": 25000, "limit": 6 } }
+```
+
+Relatedness is anchored on the place, not on a generic feed:
+
+- `places` — other places within **25 km**, ordered by **same category first**, then
+  distance. Each carries `distanceM`.
+- `experiences` — visible experiences written about those related places, with the
+  same category-first, distance-then order. The anchor place's own experiences are
+  **not** included; use `/experiences` for those.
+- Every experience is filtered by the same visibility rule as everywhere else, so this
+  cannot reveal a review the viewer could not open directly.
+
 Errors: `404 PLACE_NOT_FOUND`.
 
 #### `POST /api/places` — dedup-aware create
@@ -630,8 +645,18 @@ Errors: `404 PLACE_NOT_FOUND`.
 
 | Response | Meaning |
 |---|---|
-| `201` `meta.created: true` | new place inserted; `data.id` is the new id, `coverPhoto` is `null` (no experiences yet) |
-| `200` `meta.created: false` | fuzzy name (>0.4 similarity) **within 200 m** matched an existing place — `data` is *that* place, including its `coverPhoto`. Use its `id` instead of creating a duplicate. |
+| `201` `meta.created: true` | new place inserted; `data.id` is the new id, `coverPhoto` is `null` (no place photo yet) |
+| `200` `meta.created: false` | matched an existing place — `data` is *that* place, including its `coverPhoto`. Use its `id` instead of creating a duplicate. |
+
+A match needs name similarity `> 0.6` on the normalised name, **and** either:
+
+- the new place's `city` matches the candidate's (case-insensitive trigram similarity
+  `> 0.4`, so `peshawer` matches `Peshawar`) and the two points are within **50 km**; or
+- no city match, but the two points are within **30 km**.
+
+The city is the range, not the street: the same venue recorded from the other side of
+Peshawar is still the same venue. The 50 km cap stops a wrong city label from merging a
+place across the country.
 
 ```json
 { "data": { "id": "5e6dab8b-…", "name": "Bala Hisar Fort", … }, "meta": { "created": false } }
@@ -660,9 +685,9 @@ Returns `200 { "data": Place }`, re-read through the same viewer-aware projectio
 as `GET /api/places/:id`, so `coverPhoto` and the counts match a refetch.
 
 `GET /api/places/:id` also carries **`canEdit: boolean`** — true only for the
-creator. Drive the edit affordance from it; it is a capability, not a `createdBy`
-id, and who added a place is not broadcast to every reader. It is absent from
-search/nearby, which is where the edit control does not appear.
+creator — and **`owner`** (`{ id, name, avatarPath }`) for attribution. Both are
+detail-only: search/nearby stay lean, and neither is where the edit control
+appears.
 
 `places.created_by` is `ON DELETE SET NULL`, so a place whose creator deleted
 their account is editable by nobody (`canEdit: false`) — left wrong rather than

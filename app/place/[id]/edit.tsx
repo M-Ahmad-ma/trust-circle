@@ -1,7 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { placesApi } from '@/api';
@@ -28,10 +36,10 @@ type Form = {
 };
 
 /**
- * README §13 — a place added with an approximate pin is only a placeholder until
- * someone corrects it, and the create form already promises that ("Location can
- * be rough — it can be corrected later"). Corrections are open to any signed-in
- * user; the server enforces no ownership, matching the open POST.
+ * README §13 — a place added with an approximate pin is only a placeholder
+ * until its creator corrects it. Only the person who added the place may edit
+ * it; the server enforces that, and this screen refuses to render the form for
+ * anyone else even if they arrive by deep link.
  *
  * Split into a loader and a form because the form seeds itself from the loaded
  * record in a state initialiser. Copying the record into state from an effect
@@ -52,7 +60,7 @@ export default function EditPlaceScreen() {
   if (place.status === 'loading') {
     return (
       <View className="flex-1 items-center justify-center bg-paper-100">
-        <LoadingState label={'Loading place…'} />
+        <LoadingState label="Loading place…" />
       </View>
     );
   }
@@ -79,29 +87,28 @@ export default function EditPlaceScreen() {
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
             accessibilityRole="button"
-            accessibilityLabel={'Go back'}
+            accessibilityLabel="Go back"
             hitSlop={10}
             className="h-9 w-9 items-center justify-center rounded-pill active:opacity-60">
             <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
           </Pressable>
-          <Text className="font-body-semibold text-3xs uppercase text-ink-400">{'Edit place'}</Text>
+          <Text className="font-body-semibold text-3xs uppercase text-ink-400">Edit place</Text>
           <View className="h-9 w-9" />
         </View>
 
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-center font-display text-[20px] text-ink-900">
-            {'This place is not yours to edit'}
+            This place is not yours to edit
           </Text>
           <Text className="mt-3 text-center font-body text-[12.5px] leading-[19px] text-ink-500">
-            {
-              'Only the person who added a place can change its name, address or location. If something here is wrong, tell the person who added it.'
-            }
+            Only the person who added a place can change its name, address or location. If something
+            here is wrong, tell the person who added it.
           </Text>
           <Pressable
             onPress={() => router.replace({ pathname: '/place/[id]', params: { id } })}
             accessibilityRole="button"
             className="mt-6 h-11 items-center justify-center rounded-card border border-primary-600 px-6 active:bg-rose-100">
-            <Text className="font-body-semibold text-[13px] text-primary-600">{'View place'}</Text>
+            <Text className="font-body-semibold text-[13px] text-primary-600">View place</Text>
           </Pressable>
         </View>
       </View>
@@ -132,6 +139,24 @@ function PlaceForm({ place }: { place: WirePlace }) {
     lat: place.lat,
     lng: place.lng,
   }));
+
+  /**
+   * The sheet edits a pending point. Closing it without confirming leaves the
+   * saved location untouched, which is the only behaviour that makes a cancel
+   * button mean something.
+   */
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [pendingCoords, setPendingCoords] = useState<Coords>(coords);
+
+  const openLocation = () => {
+    setPendingCoords(coords);
+    setLocationOpen(true);
+  };
+
+  const applyLocation = () => {
+    setCoords(pendingCoords);
+    setLocationOpen(false);
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -208,28 +233,14 @@ function PlaceForm({ place }: { place: WirePlace }) {
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
             accessibilityRole="button"
-            accessibilityLabel={'Go back'}
+            accessibilityLabel="Go back"
             hitSlop={10}
             className="h-9 w-9 items-center justify-center rounded-pill active:opacity-60">
             <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
           </Pressable>
-          <Text className="font-body-semibold text-3xs uppercase text-ink-400">{'Edit place'}</Text>
+          <Text className="font-body-semibold text-3xs uppercase text-ink-400">Edit place</Text>
           <View className="h-9 w-9" />
         </View>
-
-        {/*
-          The map is the coordinate editor, and it must sit **outside** the
-          vertical ScrollView below: nested inside one, the parent wins the
-          vertical gesture and the map only pans sideways, which reads as a
-          broken map. Pinned above the form it keeps the gesture and stays
-          visible while the fields are edited.
-        */}
-        <PlaceLocationPicker
-          value={coords}
-          onChange={setCoords}
-          center={{ lat: place.lat, lng: place.lng }}
-          userLocation={location}
-        />
 
         <ScrollView
           className="flex-1"
@@ -241,15 +252,13 @@ function PlaceForm({ place }: { place: WirePlace }) {
               Fix the <Text className="font-display-italic text-primary-600">details</Text>.
             </Text>
             <Text className="mt-3 font-body text-[12.5px] leading-[18px] text-ink-500">
-              {
-                'Places are shared, so anyone can correct the details. Experiences written about this place are left alone.'
-              }
+              Only you can change this place. Experiences written about it are left alone.
             </Text>
           </View>
 
           <View className="mt-8 gap-6 px-5">
             <AuthField
-              label={'Place name'}
+              label="Place name"
               value={form.name}
               onChangeText={(name) => set('name', name)}
               error={errors.name || null}
@@ -264,7 +273,7 @@ function PlaceForm({ place }: { place: WirePlace }) {
               category, and the server reads it as clearing the old one.
             */}
             <AuthField
-              label={'Category'}
+              label="Category"
               value={form.category}
               onChangeText={(category) => set('category', category)}
               error={errors.category || null}
@@ -274,18 +283,49 @@ function PlaceForm({ place }: { place: WirePlace }) {
             />
 
             <AuthField
-              label={'Address'}
+              label="Address"
               value={form.address}
               onChangeText={(address) => set('address', address)}
               autoCapitalize="words"
             />
 
             <AuthField
-              label={'City'}
+              label="City"
               value={form.city}
               onChangeText={(city) => set('city', city)}
               autoCapitalize="words"
             />
+
+            {/* The map/search moved into a full-height sheet, so the fields
+                open at the top of the screen instead of below a 224 px map. */}
+            <View>
+              <Text className="font-body-semibold text-3xs uppercase text-ink-400">Location</Text>
+
+              <Pressable
+                onPress={openLocation}
+                accessibilityRole="button"
+                accessibilityLabel="Change location"
+                className="mt-2 flex-row items-center gap-3 rounded-card border border-hairline bg-paper-50 px-3 py-3 active:opacity-70">
+                <View className="h-10 w-10 items-center justify-center rounded-[10px] bg-rose-100">
+                  <MaterialCommunityIcons
+                    name="map-marker-radius-outline"
+                    size={18}
+                    color="#a03246"
+                  />
+                </View>
+
+                <View className="flex-1">
+                  <Text className="font-body-semibold text-[13px] text-ink-900">
+                    Location selected
+                  </Text>
+                  <Text numberOfLines={1} className="mt-0.5 font-body text-[11px] text-ink-400">
+                    {`${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`}
+                  </Text>
+                </View>
+
+                <Text className="font-body-semibold text-[11.5px] text-primary-600">Change</Text>
+              </Pressable>
+            </View>
           </View>
 
           {notice && (
@@ -317,6 +357,60 @@ function PlaceForm({ place }: { place: WirePlace }) {
           </Text>
         </Pressable>
       </View>
+
+      {/* Mounted only while open so the map starts from the saved point rather
+          than wherever it was left last time. Closing discards the pending
+          point; nothing reaches the server until Save changes. */}
+      {locationOpen && (
+        <Modal
+          visible
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setLocationOpen(false)}>
+          <KeyboardAvoidingView
+            className="flex-1 bg-paper-100"
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <View
+              className="flex-row items-center justify-between border-b border-hairline bg-paper-50 px-4"
+              style={{ paddingTop: insets.top + 8, paddingBottom: 8 }}>
+              <Pressable
+                onPress={() => setLocationOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Close location picker"
+                hitSlop={10}
+                className="h-10 w-10 items-center justify-center active:opacity-60">
+                <MaterialCommunityIcons name="close" size={21} color="#342d27" />
+              </Pressable>
+              <Text className="font-body-semibold text-3xs uppercase text-ink-400">
+                Edit location
+              </Text>
+              <View className="h-10 w-10" />
+            </View>
+
+            <PlaceLocationPicker
+              variant="sheet"
+              value={pendingCoords}
+              onChange={setPendingCoords}
+              center={coords}
+              userLocation={location}
+            />
+
+            <View
+              className="border-t border-hairline bg-paper-50 px-4"
+              style={{ paddingBottom: Math.max(insets.bottom, 14), paddingTop: 12 }}>
+              <Pressable
+                onPress={applyLocation}
+                accessibilityRole="button"
+                className="items-center justify-center rounded-card bg-primary-600 active:opacity-90"
+                style={{ height: 52 }}>
+                <Text className="font-body-semibold text-[15px] text-primary-fg">
+                  Use this location
+                </Text>
+              </Pressable>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
     </View>
   );
 }

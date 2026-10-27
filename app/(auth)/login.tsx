@@ -82,22 +82,20 @@ export default function LoginScreen() {
           </View>
 
           <View className="px-6 pt-10">
-            <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-              {'Sign in'}
-            </Text>
+            <Text className="font-body-semibold text-2xs uppercase text-primary-600">Sign in</Text>
 
             <Text className="mt-3 font-display text-[34px] leading-[38px] text-ink-900">
               Welcome <Text className="font-display-italic text-primary-600">back</Text>.
             </Text>
 
             <Text className="mt-3 max-w-[300px] font-body text-[13px] leading-[19px] text-ink-500">
-              {'Pick up where your circle left off — the places you trust, and who has been there.'}
+              Pick up where your circle left off — the places you trust, and who has been there.
             </Text>
           </View>
 
           <View className="mt-9 gap-6 px-6">
             <AuthField
-              label={'Email'}
+              label="Email"
               value={email}
               onChangeText={setEmail}
               onBlur={() => setTouched((t) => ({ ...t, email: true }))}
@@ -111,7 +109,7 @@ export default function LoginScreen() {
 
             <View>
               <PasswordField
-                label={'Password'}
+                label="Password"
                 value={password}
                 onChange={setPassword}
                 onSubmitEditing={submit}
@@ -124,7 +122,7 @@ export default function LoginScreen() {
               />
 
               <View className="mt-2 self-end">
-                <AuthLink onPress={() => {}}>{'Forgot password?'}</AuthLink>
+                <AuthLink onPress={() => {}}>Forgot password?</AuthLink>
               </View>
             </View>
           </View>
@@ -141,7 +139,7 @@ export default function LoginScreen() {
 
           <View className="mt-8 px-6">
             <AuthButton
-              label={'Sign in'}
+              label="Sign in"
               icon="arrow-right"
               onPress={submit}
               disabled={!canSubmit}
@@ -150,8 +148,8 @@ export default function LoginScreen() {
           </View>
 
           <View className="mt-7 flex-row items-center justify-center gap-1.5">
-            <Text className="font-body text-[13px] text-ink-500">{'No circle yet?'}</Text>
-            <AuthLink onPress={() => router.replace('/(auth)/register')}>{'Create one'}</AuthLink>
+            <Text className="font-body text-[13px] text-ink-500">No circle yet?</Text>
+            <AuthLink onPress={() => router.replace('/(auth)/register')}>Create one</AuthLink>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

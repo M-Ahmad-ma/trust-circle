@@ -44,20 +44,27 @@ export function PeopleRail({
         // Without this the horizontal rail flex-grows and steals vertical space.
         className="mt-4 grow-0"
         contentContainerStyle={{ paddingHorizontal: RAIL_PADDING, gap: 12 }}>
-        {people.map((person) => (
-          <Pressable
-            key={person.id}
-            onPress={() => onOpenPerson(person.id)}
-            accessibilityRole="button"
-            accessibilityLabel={person.name}
-            className="items-center active:opacity-70"
-            style={{ width: AVATAR }}>
-            <Avatar user={person} size={AVATAR} />
-            <Text numberOfLines={1} className="mt-2 font-body text-[10px] text-ink-500">
-              {person.name.split(' ')[0]}
-            </Text>
-          </Pressable>
-        ))}
+        {people.map((person) => {
+          // `name` is optional on AvatarUser (the preview avatar has no name to
+          // show), but a roster entry always has one in practice. Fall back
+          // rather than printing "undefined" if the API ever omits it.
+          const name = person.name ?? 'Someone';
+
+          return (
+            <Pressable
+              key={person.id}
+              onPress={() => onOpenPerson(person.id)}
+              accessibilityRole="button"
+              accessibilityLabel={name}
+              className="items-center active:opacity-70"
+              style={{ width: AVATAR }}>
+              <Avatar user={person} size={AVATAR} />
+              <Text numberOfLines={1} className="mt-2 font-body text-[10px] text-ink-500">
+                {name.split(' ')[0]}
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
     </View>
   );

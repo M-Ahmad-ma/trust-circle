@@ -95,7 +95,7 @@ export function ExperienceRow({
         <Text className="font-body text-[10.5px] uppercase tracking-widest text-ink-300">
           {formatVisitDate(experience.visitedAt)}
         </Text>
-        <MaterialIcons name="chevron-right" size={19} color='#a03246' />
+        <MaterialIcons name="chevron-right" size={19} color="#a03246" />
         {/* {onOpen && <Text className="font-body-semibold text-[11.5px] text-primary-600">Open</Text>} */}
       </View>
     </Pressable>

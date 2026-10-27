@@ -88,8 +88,7 @@ my-expo-app/
 │  │  ├─ experienceDraft.tsx# Compose-flow reducer + context
 │  │  └─ validation.ts
 │  ├─ components/           # Presentational, grouped by domain
-│  ├─ theme/                # Palette (tailwind.config.js), map style, relationship
-│  └─ data.js               # All user-facing copy, centralised
+│  └─ theme/                # Palette (tailwind.config.js), map style, relationship
 ```
 
 **Convention:** `src/api/types.ts` holds **wire** types using the server's own field names (`avatarPath`). UI-only types live in `src/types.ts`. `AvatarUser` deliberately keeps `avatarPath` so any wire user can be passed straight in — renaming it would let a `SlimUser` satisfy the type while carrying no photo, and TypeScript would not catch it because the field is optional.
@@ -113,14 +112,14 @@ This is the map you asked for. 🔒 = requires a bearer token.
 | --- | --- | --- |
 | `(tabs)/index.tsx` | `GET /api/places/search` 🔒<br>`GET /api/users/me` 🔒 | `search` is re-run per keystroke via a `useCallback` keyed on `query`. Fixed centre `34.015, 71.58`, radius 20 km, limit 50 |
 
-The centre is hardcoded to Peshawar "until device location lands" — **there is no location permission flow yet**.
+The centre comes from `useUserLocation`; Peshawar is only the fallback until a fix or permission arrives.
 
 ### Place & experience
 
 | Screen | Calls | Notes |
 | --- | --- | --- |
-| `place/[id].tsx` | `GET /api/places/:id` 🔒<br>`GET /api/places/:id/experiences` 🔒 | Tapping a reviewer avatar/name pushes `/profile/:reviewerId` |
-| `experience/[id].tsx` | `GET /api/experiences/:id` 🔒 | Own hand-rolled `kind` state machine: `loading`/`ready`/`hidden`/`missing`/`error`, so `403 NOT_VISIBLE` and `404` render different copy |
+| `place/[id].tsx` | `GET /api/places/:id` 🔒<br>`GET /api/places/:id/experiences` 🔒<br>`GET /api/places/:id/related` 🔒 | Owner attribution under the heading; related places + nearby experiences after the place's own list. Tapping a reviewer avatar/name pushes `/profile/:reviewerId` |
+| `experience/[id].tsx` | `GET /api/experiences/:id` 🔒<br>`GET /api/places/:placeId/experiences` 🔒<br>`GET /api/places/:placeId/related` 🔒 | Own hand-rolled `kind` state machine: `loading`/`ready`/`hidden`/`missing`/`error`. Related sections: more at the same place, related places, nearby experiences |
 
 ### People
 
@@ -140,13 +139,13 @@ The centre is hardcoded to Peshawar "until device location lands" — **there is
 | Step | Calls | Notes |
 | --- | --- | --- |
 | `write/place.tsx` | `GET /api/places/search` 🔒 | Pick an existing place |
-| `write/photo.tsx` | — | Local only; images upload at preview |
+| `write/photo.tsx` | `POST /api/uploads` 🔒 | Required; each photo uploads as it is picked, in parallel, with per-tile progress and retry |
 | `write/rating.tsx` | — | 1–5: *Not for me · It was fine · Good · Really good · Exceptional* |
 | `write/story.tsx` | — | |
 | `write/date.tsx` | — | Cannot be in the future |
 | `write/visibility.tsx` | — | circle / extended / community |
-| `write/preview.tsx` | `POST /api/uploads` 🔒 (per photo)<br>`POST /api/experiences` 🔒 | Uploads first, then posts with `photoIds` |
-| `write/new-place.tsx` | `POST /api/places` 🔒 | |
+| `write/preview.tsx` | `POST /api/uploads` 🔒 (retries only unfinished photos)<br>`POST /api/experiences` 🔒 | Uploads any stragglers with a progress bar, then posts with `photoIds` |
+| `write/new-place.tsx` | `POST /api/places` 🔒<br>`POST /api/uploads` 🔒 (per photo) | Map/search live in a full-height location sheet behind a *Select location* row; photos upload in parallel |
 
 **Visibility options** (`src/theme/relationship.ts:81`):
 
@@ -258,7 +257,7 @@ Chronological, all verified against the running server.
 
 ### Server behaviour established (and worth not re-deriving)
 
-- `avgRating` is `number | null`; `coverPhoto` is viewer-aware — two viewers can get different covers for one place.
+- `avgRating` is `number | null`; `coverPhoto` is the place's own photo and is the same for every viewer.
 - `/api/users/suggestions` excludes self, blocked pairs, existing friends, **and any pair with a request pending in either direction**. Tapping "Add" therefore removes someone from the list by design.
 - `RelationshipType` has **no `pending` member**. Neither `/api/users/:id` nor `/api/friends/:userId/relationship` reports an open request — an in-flight pair reads as `none`. Any "Add" button must therefore render optimistically and let the response decide.
 - `GET /api/users/:id/experiences` returns experiences *authored by* that user, so on a profile the reviewer is always the profile owner. The reviewer link is deliberately inert there.
@@ -328,7 +327,7 @@ Seeded accounts are `ahmed@trust.dev`, `sara@trust.dev`, … plus `hey@gmail.com
 
 ## 11. Conventions worth knowing before editing
 
-- **All user-facing copy is centralised** in `src/data.js` (`exploreCopy`, `placeCopyApi`, `profileCopyApi`, `circleCopyApi`, `peopleCopy`, `authCopy`, `writeCopy`). No inline strings in screens.
+- **Copy lives inline** at the point of use. There is no central string table: text reads as part of the screen, which keeps a label and the layout around it in one place.
 - **`src/components/` is presentational.** Domain components take callbacks; screens own navigation and data.
 - **Callbacks passed to `useApiQuery` are read through refs**, never used as effect deps — inline closures would otherwise re-arm the fetch every render.
 - **Never fabricate content.** An empty state says so and offers the next step.

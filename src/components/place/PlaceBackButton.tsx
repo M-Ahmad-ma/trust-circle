@@ -19,7 +19,7 @@ export function PlaceBackButton({ topInset }: { topInset: number }) {
     <Pressable
       onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
       accessibilityRole="button"
-      accessibilityLabel={'Go back'}
+      accessibilityLabel="Go back"
       hitSlop={10}
       className="absolute left-4 h-9 w-9 items-center justify-center rounded-full bg-black/40 active:opacity-70"
       style={{ top: topInset + 8 }}>

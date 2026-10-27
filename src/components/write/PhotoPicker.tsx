@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { validateUpload } from '@/api/endpoints/uploads';
 
@@ -19,14 +19,24 @@ export type PickerPhoto = {
 };
 
 type PhotoPickerProps = {
-  /** Local files only. The strip renders `localUri` and nothing else. */
-  photos: readonly { localUri: string }[];
+  /**
+   * Local files only — the strip renders `localUri`. The optional upload fields
+   * are owned by the caller, which starts the transfer as soon as a file is
+   * picked and flips them as it settles.
+   */
+  photos: readonly {
+    localUri: string;
+    uploading?: boolean;
+    uploadError?: string | null;
+  }[];
   /** Hard cap. The last slot is the cover. */
   max: number;
   onAdd: (added: PickerPhoto[]) => void;
   onRemove: (index: number) => void;
   onMove: (from: number, to: number) => void;
   onRemoveAll: () => void;
+  /** Retry a tile whose upload failed. No-op when uploads are synchronous. */
+  onRetry?: (index: number) => void;
   /** Under the strip — what the cover rule and the arrows mean. */
   orderHint?: string | null;
   /** Shown when nothing has been picked yet. */
@@ -45,9 +55,10 @@ const TILE = 104;
  * caller owns the list; this owns the camera, the library, the permission
  * prompts and the rejection messages.
  *
- * Nothing is uploaded from here. The files stay local until the caller has
- * somewhere to put them: an experience for the write flow, a place for a new
- * one.
+ * Uploading is the caller's job — it is the only side that knows where the
+ * file belongs (an experience for the write flow, a place for a new one) — but
+ * the caller reports progress back through the photo entries, so a tile says
+ * "uploading" or offers a retry instead of looking finished before it is.
  */
 export function PhotoPicker({
   photos,
@@ -56,6 +67,7 @@ export function PhotoPicker({
   onRemove,
   onMove,
   onRemoveAll,
+  onRetry,
   orderHint,
   emptyNote,
   tile = TILE,
@@ -96,7 +108,7 @@ export function PhotoPicker({
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       setNotice(
-        'Photo access is off, so the picker cannot open. Enable it in Settings, or add one of ours below.'
+        'Photo access is off, so the picker cannot open. Enable it in Settings, then try again.'
       );
       return;
     }
@@ -132,17 +144,17 @@ export function PhotoPicker({
     <View>
       {photos.length > 0 && (
         <View>
-          <View className="flex-row items-center justify-between">
+          <View className="flex-row mt-4 items-center justify-between">
             <Text className="font-body-semibold text-3xs uppercase text-ink-400">
               {photos.length} of {max}
             </Text>
             <Pressable
               onPress={onRemoveAll}
               accessibilityRole="button"
-              accessibilityLabel={'Remove all photos'}
+              accessibilityLabel="Remove all photos"
               hitSlop={8}
               className="active:opacity-60">
-              <Text className="font-body-medium text-[11px] text-ink-400">{'Remove all'}</Text>
+              <Text className="font-body-medium text-[11px] text-ink-400">Remove all</Text>
             </Pressable>
           </View>
 
@@ -159,6 +171,37 @@ export function PhotoPicker({
                   resizeMode="cover"
                   accessibilityIgnoresInvertColors
                 />
+
+                {/* Upload state sits above the image but below the remove and
+                    reorder controls, so a tile that is still moving can still
+                    be reordered or dropped. */}
+                {(photo.uploading || photo.uploadError) && (
+                  <View
+                    className="absolute inset-0 items-center justify-center"
+                    style={{ backgroundColor: 'rgba(28,24,21,0.58)' }}>
+                    {photo.uploading ? (
+                      <>
+                        <ActivityIndicator color="#fdfaf4" size="small" />
+                        <Text className="mt-1 font-body-medium text-[9px] text-paper-50">
+                          Uploading
+                        </Text>
+                      </>
+                    ) : (
+                      <Pressable
+                        onPress={() => onRetry?.(index)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Retry uploading photo ${index + 1}`}
+                        hitSlop={6}
+                        className="items-center justify-center gap-0.5 active:opacity-70">
+                        <MaterialCommunityIcons name="refresh" size={19} color="#fdfaf4" />
+                        <Text className="font-body-semibold text-[9px] uppercase text-paper-50">
+                          Retry
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
+                )}
+
                 <Pressable
                   onPress={() => onRemove(index)}
                   accessibilityRole="button"
@@ -169,7 +212,7 @@ export function PhotoPicker({
                 {index === 0 && (
                   <View className="absolute bottom-1.5 left-1.5 rounded-pill bg-ink-900/75 px-2 py-0.5">
                     <Text className="font-body-semibold text-[8.5px] uppercase text-paper-50">
-                      {'Cover'}
+                      Cover
                     </Text>
                   </View>
                 )}
@@ -200,19 +243,25 @@ export function PhotoPicker({
           {orderHint ? (
             <Text className="mt-2.5 font-body text-[10.5px] text-ink-400">{orderHint}</Text>
           ) : null}
+
+          {photos.some((photo) => photo.uploadError) && (
+            <Text className="mt-1.5 font-body text-[10.5px] text-primary-700">
+              A photo did not upload. Tap it to try again.
+            </Text>
+          )}
         </View>
       )}
 
-      <View className="mt-7 gap-2.5">
+      <View className="mt-3 gap-2.5">
         <ActionRow
           icon="image-multiple-outline"
-          label={'Choose from library'}
+          label="Choose from library"
           disabled={atLimit}
           onPress={openLibrary}
         />
         <ActionRow
           icon="camera-outline"
-          label={'Take a photo'}
+          label="Take a photo"
           disabled={atLimit}
           onPress={openCamera}
         />
@@ -225,11 +274,12 @@ export function PhotoPicker({
 
         {atLimit && (
           <Text className="mt-1 font-body text-[11.5px] text-ink-400">
-            {'Ten photos is the maximum for one experience.'}
+            Ten photos is the maximum for one experience.
           </Text>
         )}
 
-        {/* README §5 — photos are optional, so a blocked camera is not a dead end. */}
+        {/* The caller decides whether this step is required; when photos are not
+            necessary yet, a blocked camera still needs to be a way forward. */}
         {photos.length === 0 && emptyNote && (
           <View className="mt-3 flex-row gap-2.5 rounded-card bg-surface p-4">
             <MaterialCommunityIcons name="information-outline" size={15} color="#6b6058" />
@@ -286,9 +336,8 @@ function ActionRow({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      className={`flex-row items-center gap-3 rounded-card border border-border bg-paper-50 px-4 py-3.5 ${
-        disabled ? 'opacity-40' : 'active:opacity-70'
-      }`}>
+      className={`flex-row items-center gap-3 rounded-card border border-border bg-paper-50 px-4 py-3.5 ${disabled ? 'opacity-40' : 'active:opacity-70'
+        }`}>
       <MaterialCommunityIcons name={icon} size={19} color="#a03246" />
       <Text className="flex-1 font-body-semibold text-[13px] text-ink-900">{label}</Text>
     </Pressable>

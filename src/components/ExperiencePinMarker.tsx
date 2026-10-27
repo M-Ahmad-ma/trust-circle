@@ -35,6 +35,9 @@ export function ExperiencePinMarker({ experience, selected, onPress }: Experienc
 
   const label = `${experience.reviewer.name} rated ${experience.place.name} ${experience.rating} out of 5, ${experience.relationship.label}`;
 
+
+  const isFriend = experience.relationship.type === "direct_friend"
+
   return (
     <View style={{ width: disc, height: disc }}>
       <Pressable
@@ -75,7 +78,7 @@ export function ExperiencePinMarker({ experience, selected, onPress }: Experienc
             paddingHorizontal: selected ? 4 : 3,
             paddingVertical: selected ? 1.5 : 1,
           }}>
-          <MaterialCommunityIcons name="star" size={selected ? 9 : 8} color={BRASS} />
+          <MaterialCommunityIcons name="star" size={selected ? 9 : 8} color={isFriend ? '#7e2534' : BRASS} />
           <Text
             className="font-body-bold"
             style={{

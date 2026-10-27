@@ -18,7 +18,6 @@ import type { WirePlace } from '@/api/types';
 import { FlowHeader } from '@/components/write/FlowHeader';
 import { STEP_ROUTES, useExperienceDraft } from '@/lib/experienceDraft';
 import { useUserLocation } from '@/lib/useUserLocation';
-import { photo } from '@/theme/photoMap';
 
 export default function PlaceStep() {
   const insets = useSafeAreaInsets();
@@ -133,7 +132,7 @@ export default function PlaceStep() {
         <View style={{ paddingTop: insets.top + 8 }}>
           <FlowHeader
             current="place"
-            closeLabel={'Discard this experience'}
+            closeLabel="Discard this experience"
             onClose={() => router.replace('/(tabs)/')}
           />
         </View>
@@ -145,7 +144,7 @@ export default function PlaceStep() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
           <View className="px-5 pt-9">
             <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-              {'New experience'}
+              New experience
             </Text>
             <Text className="mt-3 font-display text-[30px] leading-[35px] text-ink-900">
               Where did you <Text className="font-display-italic text-primary-600">go</Text>?
@@ -158,7 +157,7 @@ export default function PlaceStep() {
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder={'Search places near you'}
+                placeholder="Search places near you"
                 placeholderTextColor="#b8a37c"
                 autoCorrect={false}
                 returnKeyType="search"
@@ -168,7 +167,7 @@ export default function PlaceStep() {
                 <Pressable
                   onPress={() => setQuery('')}
                   accessibilityRole="button"
-                  accessibilityLabel={'Clear search'}
+                  accessibilityLabel="Clear search"
                   hitSlop={8}
                   className="active:opacity-60">
                   <MaterialCommunityIcons name="close-circle" size={15} color="#b8a37c" />
@@ -201,9 +200,7 @@ export default function PlaceStep() {
                 onPress={() => void runSearch(query)}
                 accessibilityRole="button"
                 className="mt-3 self-center active:opacity-60">
-                <Text className="font-body-semibold text-[12px] text-primary-600">
-                  {'Try again'}
-                </Text>
+                <Text className="font-body-semibold text-[12px] text-primary-600">Try again</Text>
               </Pressable>
             </View>
           ) : loading && results.length === 0 ? (
@@ -233,12 +230,22 @@ export default function PlaceStep() {
                       backgroundColor: active ? '#f7e3e5' : '#fdfaf4',
                     }}>
                     <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-[10px] bg-surface">
-                      <Image
-                        source={{ uri: `${apiBaseUrl()}${place.coverPhoto}` }}
-                        style={{ width: 48, height: 48 }}
-                        resizeMode="cover"
-                        accessibilityIgnoresInvertColors
-                      />
+                      {place.coverPhoto ? (
+                        <Image
+                          source={{ uri: `${apiBaseUrl()}${place.coverPhoto}` }}
+                          style={{ width: 48, height: 48 }}
+                          resizeMode="cover"
+                          accessibilityIgnoresInvertColors
+                        />
+                      ) : (
+                        // No borrowed review photo, so say "no picture" plainly
+                        // rather than pointing an <Image> at "null".
+                        <MaterialCommunityIcons
+                          name="map-marker-outline"
+                          size={20}
+                          color="#b8a37c"
+                        />
+                      )}
                     </View>
 
                     <View className="flex-1">
@@ -267,7 +274,7 @@ export default function PlaceStep() {
                     Nothing matches “{query.trim()}”
                   </Text>
                   <Text className="text-center font-body text-[12px] text-ink-400">
-                    {'It may not be on Trust Circle yet.'}
+                    It may not be on Trust Circle yet.
                   </Text>
                 </View>
               )}
@@ -282,7 +289,7 @@ export default function PlaceStep() {
               className="flex-row items-center justify-center gap-2 rounded-card border border-dashed border-sand-400 py-3.5 active:opacity-70">
               <MaterialCommunityIcons name="plus" size={16} color="#a03246" />
               <Text className="font-body-semibold text-[12.5px] text-primary-600">
-                {'Add a new place'}
+                Add a new place
               </Text>
             </Pressable>
           </View>
@@ -315,30 +322,4 @@ export default function PlaceStep() {
 
 function formatDistance(metres: number): string {
   return metres < 1000 ? `${Math.round(metres)} m` : `${(metres / 1000).toFixed(1)} km`;
-}
-
-/**
- * The API's Place has no cover image, so the list falls back to a generated
- * thumbnail chosen by category. Deterministic, and it never claims to be a
- * photo of the place.
- */
-function placeThumbKey(category: string | null): string {
-  switch (category) {
-    case 'cafe':
-    case 'coffee':
-      return 'beanstalk-coffee-hero-1';
-    case 'hotel':
-      return 'hotel-shahi-hero-1';
-    case 'museum':
-      return 'peshawar-museum-hero-1';
-    case 'landmark':
-      return 'bala-bagh-fort-hero-1';
-    case 'park':
-      return 'bala-bagh-fort-hero-2';
-    case 'shop':
-    case 'shopping':
-      return 'qissa-khwani-bazaar-hero-1';
-    default:
-      return 'khyber-restaurant-hero-1';
-  }
 }

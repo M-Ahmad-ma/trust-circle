@@ -1,5 +1,5 @@
 import { api, unwrap, unwrapWithMeta } from '../client';
-import type { CreatePlaceInput, WirePlace } from '../types';
+import type { CreatePlaceInput, PlaceRelatedContent, WirePlace } from '../types';
 
 export interface PlaceSearchParams {
   q?: string;
@@ -44,11 +44,20 @@ export async function getPlace(id: string): Promise<WirePlace> {
   return unwrap<WirePlace>(await api(`/api/places/${id}`));
 }
 
+/**
+ * Same-kind places first, then the nearest, plus experiences written about
+ * those places. Anchored on a place the viewer is already looking at — it is a
+ * recommendation set, not a feed.
+ */
+export async function getPlaceRelated(id: string): Promise<PlaceRelatedContent> {
+  return unwrap<PlaceRelatedContent>(await api(`/api/places/${id}/related`));
+}
+
 export interface CreatedPlace {
   place: WirePlace;
   /**
-   * False means the server matched an existing place by fuzzy name within 200 m
-   * and returned *that* instead of inserting — reuse `place.id` rather than
+   * False means the server matched an existing place by fuzzy name in the same
+   * city and returned *that* instead of inserting — reuse `place.id` rather than
    * creating a duplicate.
    */
   created: boolean;

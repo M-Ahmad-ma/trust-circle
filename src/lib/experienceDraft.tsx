@@ -12,10 +12,14 @@ import { absoluteUrl } from '@/api/session';
 import type { ExperienceDetail, Visibility } from '@/api/types';
 
 /**
- * A photo the user picked but that may not exist on the server yet. `uploadId`
- * is filled in as uploads succeed, so a failed publish can retry without
- * re-uploading — orphaned uploads stay owned by the user and are reusable
- * (API.md §4).
+ * A photo the user picked but that may not exist on the server yet. Uploads
+ * start as soon as the file is picked, so `uploading` and `uploadError` carry
+ * the state of that attempt into the strip; `uploadId` is filled in when it
+ * succeeds, and publish only has to retry whatever is still local.
+ *
+ * `localId` is the stable identity an in-flight upload is matched against. The
+ * list can be reordered or trimmed while bytes are moving, so an index would
+ * point at the wrong photo by the time the response arrives.
  *
  * When editing, a photo already attached to the experience arrives with
  * `photoId` set and `uploadId` equal to it. That single fact is what lets publish
@@ -25,7 +29,13 @@ import type { ExperienceDetail, Visibility } from '@/api/types';
  */
 export type DraftPhoto = {
   localUri: string;
+  /** Stable for the life of this draft entry; never derived from its index. */
+  localId: string;
   uploadId?: string;
+  /** True while an upload for this file is in flight. */
+  uploading?: boolean;
+  /** Short, user-facing reason the last attempt failed. */
+  uploadError?: string | null;
   /** Set only for photos that already belong to the experience being edited. */
   photoId?: string;
   name: string;
@@ -84,7 +94,9 @@ type Action =
   | { type: 'addPhoto'; photo: DraftPhoto }
   | { type: 'removePhotoAt'; index: number }
   | { type: 'movePhoto'; from: number; to: number }
-  | { type: 'markUploaded'; index: number; uploadId: string }
+  | { type: 'markUploadStarted'; localId: string }
+  | { type: 'markUploaded'; localId: string; uploadId: string }
+  | { type: 'markUploadFailed'; localId: string; message: string }
   | { type: 'setRating'; rating: number }
   | { type: 'setReviewText'; reviewText: string }
   | { type: 'setVisitedAt'; visitedAt: string }
@@ -114,13 +126,19 @@ function reducer(state: ExperienceDraft, action: Action): ExperienceDraft {
       photos.splice(to, 0, moved);
       return { ...state, photos };
     }
+    case 'markUploadStarted':
+      return patchPhoto(state, action.localId, { uploading: true, uploadError: null });
     case 'markUploaded':
-      return {
-        ...state,
-        photos: state.photos.map((photo, i) =>
-          i === action.index ? { ...photo, uploadId: action.uploadId } : photo
-        ),
-      };
+      return patchPhoto(state, action.localId, {
+        uploading: false,
+        uploadError: null,
+        uploadId: action.uploadId,
+      });
+    case 'markUploadFailed':
+      return patchPhoto(state, action.localId, {
+        uploading: false,
+        uploadError: action.message,
+      });
     case 'setRating':
       return { ...state, rating: action.rating };
     case 'setReviewText':
@@ -138,6 +156,19 @@ function reducer(state: ExperienceDraft, action: Action): ExperienceDraft {
   }
 }
 
+function patchPhoto(
+  state: ExperienceDraft,
+  localId: string,
+  patch: Partial<DraftPhoto>
+): ExperienceDraft {
+  return {
+    ...state,
+    photos: state.photos.map((photo) =>
+      photo.localId === localId ? { ...photo, ...patch } : photo
+    ),
+  };
+}
+
 export type StepStatus = { complete: boolean; label: string };
 
 /** Drives the header rail and the Continue button's disabled state. */
@@ -146,8 +177,8 @@ export function stepStatus(draft: ExperienceDraft, step: StepId): StepStatus {
     case 'place':
       return { complete: draft.placeId !== null, label: 'Place' };
     case 'photo':
-      // README §5 — photos are optional, so this step is always complete.
-      return { complete: true, label: 'Photos' };
+      // A review without a picture is the thing this step exists to prevent.
+      return { complete: draft.photos.length > 0, label: 'Photos' };
     case 'rating':
       return { complete: draft.rating !== null && draft.rating > 0, label: 'Rating' };
     case 'story':
@@ -215,6 +246,7 @@ export function ExperienceDraftProvider({ children }: { children: ReactNode }) {
           // Already on the server: `uploadId === photoId` is what stops publish
           // re-uploading it, and `localUri` is the resolved display URL.
           localUri: absoluteUrl(photo.url) ?? '',
+          localId: photo.id,
           uploadId: photo.id,
           photoId: photo.id,
           name: photo.url,

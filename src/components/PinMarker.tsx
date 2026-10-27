@@ -30,9 +30,8 @@ type PinMarkerProps = {
  *
  * The disc shows the place's `coverPhoto` when it has one, and the derived
  * monogram otherwise. The monogram is not a placeholder here — it is the real
- * state for a place with no visible photo, which is common: the server derives
- * `coverPhoto` from the newest experience *this viewer* may see, so an
- * experience-free place, or one whose only photos belong to others, arrives
+ * state for a place with no photo of its own, which is common: covers come only
+ * from photos attached to the place itself, so a place added without one arrives
  * with `coverPhoto: null`.
  */
 export function PinMarker({ place, selected, onPress }: PinMarkerProps) {

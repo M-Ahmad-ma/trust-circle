@@ -100,13 +100,14 @@ export default function ExploreScreen() {
     setRecenterToken((token) => token + 1);
   };
 
-
-  console.log("me", me)
+  console.log('me', me);
+  console.log('places', places);
+  
 
   return (
     <Screen className="bg-paper-100" edges={['top']}>
       <View className="mt-4 flex grow-0 flex-row items-end justify-between">
-        <ExploreHeader eyebrow={'Explore'} title={location.isFallback ? 'Peshawar' : 'Near you'} />
+        <ExploreHeader eyebrow="Explore" title={location.isFallback ? 'Peshawar' : 'Near you'} />
 
         {me.data ? (
           <TouchableOpacity onPress={() => router.push('/profile')}>
@@ -119,7 +120,7 @@ export default function ExploreScreen() {
 
       <SearchField
         value={query}
-        placeholder={'Search places, people or experiences…'}
+        placeholder="Search places, people or experiences…"
         onChange={setQuery}
       />
 
@@ -127,14 +128,14 @@ export default function ExploreScreen() {
           only mounts when the query returns nothing, so a user whose city has
           places in it — which is everyone but a brand-new account on a new city —
           had no way to add one at all. */}
-      <View className='flex items-center justify-center'>
+      <View className="flex items-center justify-center">
         <Pressable
           onPress={() => router.push({ pathname: '/write/new-place', params: { standalone: '1' } })}
           accessibilityRole="button"
-          accessibilityLabel={'Add a place'}
+          accessibilityLabel="Add a place"
           className="mt-2.5 w-[90%]  flex-row items-center justify-center gap-2 rounded-card border border-dashed border-sand-400 py-3 active:opacity-70">
           <MaterialCommunityIcons name="plus" size={15} color="#a03246" />
-          <Text className="font-body-semibold text-[12px] text-primary-600">{'Add a place'}</Text>
+          <Text className="font-body-semibold text-[12px] text-primary-600">Add a place</Text>
         </Pressable>
       </View>
 
@@ -165,7 +166,7 @@ export default function ExploreScreen() {
                 ? 'No places match this search within 20 km. Try a different name, or add the place yourself.'
                 : 'Nobody you can see has written about anywhere within 20 km. Write the first one.'
             }
-            actionLabel={'Add a place'}
+            actionLabel="Add a place"
             // Standalone too: this button also lives on Explore, so it must not
             // drop the user into the review flow. The experiences-layer empty
             // state shares this action, and "add a place" is the right next step
@@ -209,8 +210,8 @@ export default function ExploreScreen() {
               <ExploreLayerToggle
                 layer={layer}
                 onLayerChange={setLayer}
-                placesLabel={'Places'}
-                experiencesLabel={'Experiences'}
+                placesLabel="Places"
+                experiencesLabel="Experiences"
               />
             )}
           </>
@@ -282,7 +283,7 @@ function PlaceSummary({
           <Text className="font-body-bold text-[13px] text-ink-800">
             {place.avgRating.toFixed(1)}
           </Text>
-          <Text className="font-body text-[11.5px] text-ink-400">{'Average rating'}</Text>
+          <Text className="font-body text-[11.5px] text-ink-400">Average rating</Text>
         </View>
       )}
 
@@ -290,7 +291,7 @@ function PlaceSummary({
         <View className="mt-2 flex-row items-center gap-1.5">
           <View className="h-1.5 w-1.5 rounded-pill bg-moss-500" />
           <Text className="font-body text-[11.5px] text-ink-500">
-            {place.experienceCount} {'experiences you can see'}
+            {place.experienceCount} experiences you can see
           </Text>
         </View>
       )}
@@ -302,17 +303,17 @@ function PlaceSummary({
         <Pressable
           onPress={onWrite}
           accessibilityRole="button"
-          accessibilityLabel={'Write an experience here'}
+          accessibilityLabel="Write an experience here"
           className="h-12 flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-hairline active:opacity-70">
           <MaterialCommunityIcons name="square-edit-outline" size={15} color="#6b6058" />
-          <Text className="font-body-semibold text-[14px] text-ink-700">{'Write'}</Text>
+          <Text className="font-body-semibold text-[14px] text-ink-700">Write</Text>
         </Pressable>
 
         <Pressable
           onPress={onOpen}
           accessibilityRole="button"
           className="h-12 flex-1 items-center justify-center rounded-card bg-primary-600 active:bg-primary-700">
-          <Text className="font-body-semibold text-[14px] text-primary-fg">{'View place'}</Text>
+          <Text className="font-body-semibold text-[14px] text-primary-fg">View place</Text>
         </Pressable>
       </View>
     </View>

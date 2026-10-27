@@ -48,7 +48,7 @@ export function VisitCalendar({ value, onChange, today = new Date() }: VisitCale
 
   const grid = useMemo(() => {
     const first = new Date(cursor.year, cursor.month, 1);
-    // Monday-first: getDay() is Sunday=0, so shift it.
+    // Monday-first: getDay() is Sunday === 0, so shift it.
     const leading = (first.getDay() + 6) % 7;
     const daysInMonth = new Date(cursor.year, cursor.month + 1, 0).getDate();
 

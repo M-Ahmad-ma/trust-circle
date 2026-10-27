@@ -14,12 +14,12 @@ export default function SettingsScreen() {
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
           accessibilityRole="button"
-          accessibilityLabel={'Go back'}
+          accessibilityLabel="Go back"
           hitSlop={10}
           className="h-10 w-10 items-center justify-center active:opacity-60">
           <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
         </Pressable>
-        <Text className="font-body-semibold text-3xs uppercase text-ink-400">{'Settings'}</Text>
+        <Text className="font-body-semibold text-3xs uppercase text-ink-400">Settings</Text>
         <View className="h-10 w-10" />
       </View>
 
@@ -37,8 +37,8 @@ export default function SettingsScreen() {
               visible. */}
           <Row
             icon="account-cancel-outline"
-            label={'Blocked people'}
-            hint={'People you blocked. Unblocking restores their profile to you.'}
+            label="Blocked people"
+            hint="People you blocked. Unblocking restores their profile to you."
             onPress={() => router.push('/settings/blocked')}
           />
         </View>

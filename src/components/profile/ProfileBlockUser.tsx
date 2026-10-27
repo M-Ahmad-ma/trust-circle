@@ -74,7 +74,7 @@ export function ProfileBlockUser({ userId, userName, onBlocked }: ProfileBlockUs
         onPress={confirm}
         disabled={busy}
         accessibilityRole="button"
-        accessibilityLabel={`${'Block this person'} ${userName}`}
+        accessibilityLabel={`$Block this person ${userName}`}
         accessibilityState={{ disabled: busy, busy }}
         className="h-10 items-center justify-center rounded-[12px] active:opacity-70"
         style={{ opacity: busy ? 0.5 : 1 }}>

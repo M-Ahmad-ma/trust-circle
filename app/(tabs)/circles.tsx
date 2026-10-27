@@ -49,10 +49,10 @@ function SuggestionSection({
   const shown = !needle
     ? items
     : items.filter(
-      (suggestion) =>
-        suggestion.user.name.toLowerCase().includes(needle) ||
-        (suggestion.user.bio ?? '').toLowerCase().includes(needle)
-    );
+        (suggestion) =>
+          suggestion.user.name.toLowerCase().includes(needle) ||
+          (suggestion.user.bio ?? '').toLowerCase().includes(needle)
+      );
 
   const suggest = async (user: UserSuggestion['user']) => {
     setSuggesting(user.id);
@@ -89,29 +89,23 @@ function SuggestionSection({
 
   return (
     <View className="mt-8 px-4">
-      <Text className="font-display-semibold text-[18px] text-ink-900">
-        {'People you might trust'}
-      </Text>
+      <Text className="font-display-semibold text-[18px] text-ink-900">People you might trust</Text>
       <Text className="mt-1.5 font-body text-[12.5px] leading-[19px] text-ink-500">
-        {
-          'People who have been to the same places as you. Their shared visit has to be something you were both allowed to see.'
-        }
+        People who have been to the same places as you. Their shared visit has to be something you
+        were both allowed to see.
       </Text>
 
-      {status === 'loading' && <LoadingState label={'Looking for shared places…'} />}
+      {status === 'loading' && <LoadingState label="Looking for shared places…" />}
 
       {status === 'error' && <ErrorState label={errorMessage} onRetry={onRetry} />}
-
 
       {settled && items.length === 0 && (
         <EmptyState
           icon="account-search-outline"
           tone="sand"
           compact
-          title={'No shared places yet'}
-          body={
-            'Share an experience somewhere and the people who have been there too will show up here.'
-          }
+          title="No shared places yet"
+          body="Share an experience somewhere and the people who have been there too will show up here."
         />
       )}
 
@@ -158,7 +152,7 @@ function SuggestionSection({
                 onPress={() => void suggest(suggestion.user)}
                 disabled={suggesting === suggestion.user.id}
                 accessibilityRole="button"
-                accessibilityLabel={`${'Add'} ${suggestion.user.name}`}
+                accessibilityLabel={`$Add ${suggestion.user.name}`}
                 className="rounded-pill border border-primary-600 px-3 py-1.5 active:bg-rose-100">
                 <Text className="font-body-semibold text-[11px] text-primary-600">
                   {suggesting === suggestion.user.id ? '…' : 'Add'}
@@ -174,7 +168,7 @@ function SuggestionSection({
         accessibilityRole="button"
         className="mt-4 flex flex-row items-center gap-2 self-start active:opacity-60">
         <Text className="font-body-semibold text-[13px] text-primary-600">
-          {'Search by name instead'}
+          Search by name instead
         </Text>
         <MaterialCommunityIcons name="arrow-right" size={18} color="#7e2534" />
       </Pressable>
@@ -186,11 +180,9 @@ function RequestsEmptyState() {
   return (
     <View className="mt-3 items-center rounded-card border border-dashed border-sand-400 bg-paper-100 px-6 py-7">
       <MaterialCommunityIcons name="account-check-outline" size={22} color="#b8a37c" />
-      <Text className="mt-2.5 font-body-semibold text-[13px] text-ink-600">
-        {'Nothing waiting'}
-      </Text>
+      <Text className="mt-2.5 font-body-semibold text-[13px] text-ink-600">Nothing waiting</Text>
       <Text className="mt-1 max-w-[260px] text-center font-body text-[12px] leading-[18px] text-ink-400">
-        {'When someone asks to join your Circle, they will show up here for you to accept.'}
+        When someone asks to join your Circle, they will show up here for you to accept.
       </Text>
     </View>
   );
@@ -241,7 +233,7 @@ export default function CircleScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}>
         <CircleHeader
-          eyebrow={'Requests'}
+          eyebrow="Requests"
           title="Circle"
           subtitle="People whose judgement you actually rely on."
           inviteLabel="Invite someone"
@@ -251,7 +243,7 @@ export default function CircleScreen() {
         <View className="mx-4 mt-5 h-px bg-border" />
 
         {friends.status === 'loading' && !friends.data && (
-          <LoadingState label={'Loading your circle…'} />
+          <LoadingState label="Loading your circle…" />
         )}
 
         {friends.status === 'error' && !friends.data && (
@@ -275,7 +267,7 @@ export default function CircleScreen() {
               onOpenPerson={(id) => router.push(`/profile/${id}`)}
             />
 
-            <CircleSearch value={query} placeholder={'Filter your circle'} onChange={setQuery} />
+            <CircleSearch value={query} placeholder="Filter your circle" onChange={setQuery} />
 
             {people.length === 0 ? (
               <EmptyState
@@ -330,7 +322,7 @@ export default function CircleScreen() {
         {/* Incoming requests are real: there is an endpoint and a state machine. */}
         {requests.status !== 'loading' && (
           <View className="mt-8 px-4">
-            <Text className="font-body-semibold text-2xs uppercase text-ink-400">{'Requests'}</Text>
+            <Text className="font-body-semibold text-2xs uppercase text-ink-400">Requests</Text>
 
             {requests.status === 'error' ? (
               <View className="mt-3">
@@ -357,19 +349,17 @@ export default function CircleScreen() {
                       onPress={() => void respond(request, true)}
                       disabled={actingOn === request.requestId}
                       accessibilityRole="button"
-                      accessibilityLabel={`${'Accept'} ${request.user.name}`}
+                      accessibilityLabel={`$Accept ${request.user.name}`}
                       className="rounded-pill bg-primary-600 px-3 py-1.5 active:opacity-70">
-                      <Text className="font-body-semibold text-[11px] text-primary-fg">
-                        {'Accept'}
-                      </Text>
+                      <Text className="font-body-semibold text-[11px] text-primary-fg">Accept</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => void respond(request, false)}
                       disabled={actingOn === request.requestId}
                       accessibilityRole="button"
-                      accessibilityLabel={`${'Decline'} ${request.user.name}`}
+                      accessibilityLabel={`$Decline ${request.user.name}`}
                       className="rounded-pill border border-border px-3 py-1.5 active:opacity-70">
-                      <Text className="font-body-medium text-[11px] text-ink-600">{'Decline'}</Text>
+                      <Text className="font-body-medium text-[11px] text-ink-600">Decline</Text>
                     </Pressable>
                   </View>
                 ))}

@@ -15,12 +15,9 @@ type ProfilePlacesProps = {
 };
 
 export function ProfilePlacesGrid({ places, imageKeys, onOpen }: ProfilePlacesProps) {
-
-
   return (
     <View className="flex-row flex-wrap gap-1 px-2   pl-3">
       {places.map((place, index) => {
-
         const currentPhotoKey = imageKeys[index];
         return (
           <Pressable
@@ -31,7 +28,10 @@ export function ProfilePlacesGrid({ places, imageKeys, onOpen }: ProfilePlacesPr
             className="mb-4 overflow-hidden rounded-card border border-hairline  active:opacity-80"
             style={{ width: TILE }}>
             <View className="h-[104px] items-center justify-center bg-surface">
-              <Image source={{ uri: `${apiBaseUrl()}${currentPhotoKey}` }} className='w-full h-full' />
+              <Image
+                source={{ uri: `${apiBaseUrl()}${currentPhotoKey}` }}
+                className="h-full w-full"
+              />
             </View>
             <View className="p-3">
               <Text numberOfLines={1} className="font-body-semibold text-[12.5px] text-ink-900">
@@ -48,14 +48,13 @@ export function ProfilePlacesGrid({ places, imageKeys, onOpen }: ProfilePlacesPr
                     {place.avgRating.toFixed(1)}
                   </Text>
                 </View>
-              )
-              }
+              )}
             </View>
           </Pressable>
-        )
+        );
       })}
     </View>
-  )
+  );
 }
 
 type ProfilePhotosProps = {
@@ -140,7 +139,7 @@ function PhotoViewer({
         accessibilityRole="button"
         accessibilityLabel="Close photo"
         className="flex-1 items-center justify-center bg-black/95 px-5">
-        <Pressable onPress={() => { }} className="w-full flex-1 items-center justify-center">
+        <Pressable onPress={() => {}} className="w-full flex-1 items-center justify-center">
           <Image
             source={{ uri }}
             style={{ width: '100%', height: '70%' }}

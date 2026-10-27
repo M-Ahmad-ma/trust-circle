@@ -19,8 +19,8 @@ export default function RatingStep() {
       <View style={{ paddingTop: insets.top + 8 }}>
         <FlowHeader
           current="rating"
-          closeLabel={'Discard this experience'}
-          onClose={() => router.dismissAll()}
+          closeLabel="Discard this experience"
+          onClose={() => router.replace('/(tabs)/')}
         />
       </View>
 
@@ -30,15 +30,14 @@ export default function RatingStep() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
         <View className="px-5 pt-9">
           <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-            {'New experience'}
+            New experience
           </Text>
           <Text className="mt-3 font-display text-[30px] leading-[35px] text-ink-900">
             How was it, <Text className="font-display-italic text-primary-600">overall</Text>?
           </Text>
           <Text className="mt-3 max-w-[310px] font-body text-[13px] leading-[19px] text-ink-500">
-            {
-              'One number for the whole visit. Trust Circle does not ask you to score food, service and cleanliness separately.'
-            }
+            One number for the whole visit. Trust Circle does not ask you to score food, service and
+            cleanliness separately.
           </Text>
         </View>
 
@@ -55,7 +54,7 @@ export default function RatingStep() {
               </Text>
             ) : (
               <Text className="font-body text-[12px] text-ink-300">
-                {'Tap a star to rate your visit.'}
+                Tap a star to rate your visit.
               </Text>
             )}
           </View>
@@ -65,12 +64,11 @@ export default function RatingStep() {
         <View className="mt-8 px-5">
           <View className="rounded-card bg-surface p-4">
             <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-              {'One number, not five'}
+              One number, not five
             </Text>
             <Text className="mt-2 font-body text-[12px] leading-[18px] text-ink-500">
-              {
-                'Split ratings turn a memory into a spreadsheet. You get to decide what mattered, and say so in your own words on the next step.'
-              }
+              Split ratings turn a memory into a spreadsheet. You get to decide what mattered, and
+              say so in your own words on the next step.
             </Text>
           </View>
         </View>
@@ -89,7 +87,7 @@ export default function RatingStep() {
           <Text
             className="font-body-semibold text-[15px]"
             style={{ color: rating > 0 ? '#fdfaf4' : '#f3ecdd' }}>
-            {'Continue'}
+            Continue
           </Text>
         </Pressable>
       </View>

@@ -28,6 +28,11 @@ type Props = {
   userLocation: UserLocation;
   /** Fires when a search result is picked, so the form can prefill name/city/category. */
   onPickResult?: (result: GeocodeResult) => void;
+  /**
+   * `inline` pins a 224 px map above a form. `sheet` fills its parent, for the
+   * full-height location picker where the map is the whole task.
+   */
+  variant?: 'inline' | 'sheet';
 };
 
 const SEARCH_DEBOUNCE_MS = 400;
@@ -45,11 +50,11 @@ const CROSS_CHECK_TOLERANCE_M = 500;
 type PhotoVerdict = 'matched' | 'moved' | 'unknown';
 
 /**
- * The map *is* the coordinate input for a new place, and it must sit **outside**
- * any vertical ScrollView. Nested inside one, the parent wins the vertical
- * gesture and the map only pans horizontally — the map appears broken. Pinning
- * it above the scrolling form fixes that and makes the map permanently visible,
- * which suits the primary control anyway.
+ * The map *is* the coordinate input for a new place. In `inline` mode it sits
+ * outside any vertical ScrollView — nested inside one, the parent wins the
+ * vertical gesture and the map only pans horizontally. In `sheet` mode the
+ * caller gives it the whole screen, so the map and its controls have room and
+ * the form underneath stays short.
  *
  * Four ways to set a point, because each fails differently:
  *   • take a photo      — exact, but needs GPS metadata the photo may not carry
@@ -63,6 +68,7 @@ export function PlaceLocationPicker({
   center,
   userLocation,
   onPickResult,
+  variant = 'inline',
 }: Props) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GeocodeResult[]>([]);
@@ -225,10 +231,14 @@ export function PlaceLocationPicker({
   };
 
   const markerAt = value ?? center;
+  const isSheet = variant === 'sheet';
 
   return (
-    <View className="flex-shrink-0 border-b border-hairline bg-paper-100">
-      <View style={{ height: MAP_HEIGHT }}>
+    <View
+      className={
+        isSheet ? 'flex-1 bg-paper-100' : 'flex-shrink-0 border-b border-hairline bg-paper-100'
+      }>
+      <View style={isSheet ? { flex: 1 } : { height: MAP_HEIGHT }}>
         <Map
           mapStyle={mapStyle}
           style={StyleSheet.absoluteFill}
@@ -299,7 +309,7 @@ export function PlaceLocationPicker({
         )}
       </View>
 
-      <View className="gap-2 px-4 pt-3">
+      <View className={isSheet ? 'gap-2 px-4 pb-4 pt-3' : 'gap-2 px-4 pt-3'}>
         <View className="flex-row gap-2">
           <Pressable
             onPress={takePhoto}

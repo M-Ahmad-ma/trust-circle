@@ -19,18 +19,21 @@ type PublishError =
   | { kind: 'visited'; message: string }
   | { kind: 'generic'; message: string };
 
-
 export default function PreviewStep() {
   const insets = useSafeAreaInsets();
   const { draft, dispatch, reset, editing } = useExperienceDraft();
 
   const [publishing, setPublishing] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(
+    null
+  );
   const [error, setError] = useState<PublishError | null>(null);
   const [profile, setProfile] = useState<AuthUser>();
 
   const ready =
     draft.placeId !== null &&
+    draft.photos.length > 0 &&
     draft.rating !== null &&
     draft.rating > 0 &&
     draft.visitedAt !== null &&
@@ -57,28 +60,56 @@ export default function PreviewStep() {
     setError(null);
 
     try {
-      const photoIds: string[] = [];
+      /**
+       * The photo step uploads as files are picked, so usually nothing is left
+       * here. Anything that failed there — or arrived from a draft restored
+       * before that step existed — travels now, in parallel, and a failure is
+       * written back onto the tile so the preview explains what is missing.
+       *
+       * Results are collected by `localId`, not by position: ten uploads finish
+       * in whatever order the network decides, while the saved experience must
+       * keep the order the person chose.
+       */
+      const uploadedIds = new Map<string, string>();
+      const pending = draft.photos.filter((photo) => !photo.uploadId);
 
-      for (let index = 0; index < draft.photos.length; index += 1) {
-        const photo = draft.photos[index];
+      if (pending.length > 0) {
+        setUploadProgress({ done: 0, total: pending.length });
+        setProgress(`Uploading ${pending.length === 1 ? 'photo' : `${pending.length} photos`}…`);
 
-        if (photo.uploadId) {
-          photoIds.push(photo.uploadId);
-          continue;
-        }
+        let done = 0;
+        await Promise.all(
+          pending.map(async (photo) => {
+            try {
+              const uploaded = await uploadsApi.uploadPhoto({
+                uri: photo.localUri,
+                name: photo.name,
+                type: photo.type,
+              });
+              uploadedIds.set(photo.localId, uploaded.id);
+              dispatch({ type: 'markUploaded', localId: photo.localId, uploadId: uploaded.id });
+            } catch (caught) {
+              dispatch({
+                type: 'markUploadFailed',
+                localId: photo.localId,
+                message: 'That photo did not upload.',
+              });
+              throw caught;
+            } finally {
+              done += 1;
+              setUploadProgress({ done, total: pending.length });
+            }
+          })
+        );
 
-        setProgress(`Uploading photo ${index + 1} of ${draft.photos.length}…`);
-        const uploaded = await uploadsApi.uploadPhoto({
-          uri: photo.localUri,
-          name: photo.name,
-          type: photo.type,
-        });
-
-        dispatch({ type: 'markUploaded', index, uploadId: uploaded.id });
-        photoIds.push(uploaded.id);
+        setUploadProgress(null);
       }
 
       setProgress(editing ? 'Saving…' : 'Publishing…');
+
+      const photoIds = draft.photos
+        .map((photo) => photo.uploadId ?? uploadedIds.get(photo.localId))
+        .filter((id): id is string => Boolean(id));
 
       const fields = {
         // Must be a JSON number, not a string.
@@ -86,7 +117,7 @@ export default function PreviewStep() {
         reviewText: draft.reviewText.trim(),
         visitedAt: draft.visitedAt as string,
         visibility: draft.visibility as NonNullable<typeof draft.visibility>,
-        photoIds: photoIds.length > 0 ? photoIds : [],
+        photoIds,
       };
 
       const saved = editing
@@ -117,6 +148,7 @@ export default function PreviewStep() {
     } finally {
       setPublishing(false);
       setProgress(null);
+      setUploadProgress(null);
     }
   };
 
@@ -159,15 +191,13 @@ export default function PreviewStep() {
     return (
       <View className="flex-1 items-center justify-center gap-3 bg-paper-100 px-8">
         <Text className="text-center font-display text-[20px] text-ink-900">
-          {'Something is missing from your experience.'}
+          Something is missing from your experience.
         </Text>
         <Pressable
           onPress={() => router.push(STEP_ROUTES.place)}
           accessibilityRole="button"
           className="active:opacity-60">
-          <Text className="font-body-semibold text-[13px] text-primary-600">
-            {'Back to the start'}
-          </Text>
+          <Text className="font-body-semibold text-[13px] text-primary-600">Back to the start</Text>
         </Pressable>
       </View>
     );
@@ -178,8 +208,8 @@ export default function PreviewStep() {
       <View style={{ paddingTop: insets.top + 8 }}>
         <FlowHeader
           current="preview"
-          closeLabel={'Discard this experience'}
-          onClose={() => router.dismissAll()}
+          closeLabel="Discard this experience"
+          onClose={() => router.replace('/(tabs)/')}
         />
       </View>
 
@@ -195,7 +225,7 @@ export default function PreviewStep() {
             {editing ? 'Change what you said.' : 'This is what your circle will see.'}
           </Text>
           <Text className="mt-2 max-w-[320px] font-body text-[12.5px] leading-[18px] text-ink-500">
-            {'Read it once as if a friend sent it to you. That is exactly how it will arrive.'}
+            Read it once as if a friend sent it to you. That is exactly how it will arrive.
           </Text>
         </View>
 
@@ -209,12 +239,12 @@ export default function PreviewStep() {
                 ringWidth={2}
               />
               <View className="flex-1">
-                <Text className="font-body-semibold text-[13.5px] text-ink-900">{'You'}</Text>
+                <Text className="font-body-semibold text-[13.5px] text-ink-900">You</Text>
                 {/* The relationship badge is deliberately absent here. It is not
                     knowable until the server annotates the card for a given
                     viewer — your own experience reads differently to everyone else. */}
                 <Text className="mt-1 font-body text-[10.5px] text-ink-400">
-                  {'Visible to'} {audience?.label}
+                  Visible to {audience?.label}
                 </Text>
               </View>
               <View className="items-end gap-1.5">
@@ -253,21 +283,16 @@ export default function PreviewStep() {
               {draft.visitedAt && (
                 <SignalRow
                   icon="map-marker-check-outline"
-                  text={`${'Visited this location'} · ${relativeVisit(draft.visitedAt)}`}
+                  text={`$Visited this location · ${relativeVisit(draft.visitedAt)}`}
                 />
               )}
               {draft.photos.length > 0 && (
-                <SignalRow
-                  icon="camera-outline"
-                  text={`${draft.photos.length} ${'original photos'}`}
-                />
+                <SignalRow icon="camera-outline" text={`${draft.photos.length} $original photos`} />
               )}
             </View>
 
             <View className="mt-4 flex-row items-center justify-between border-t border-hairline px-4 py-3">
-              <Text className="font-body-semibold text-3xs uppercase text-ink-300">
-                {'Experience'}
-              </Text>
+              <Text className="font-body-semibold text-3xs uppercase text-ink-300">Experience</Text>
               <Text className="font-body text-[11px] text-ink-400">{audience?.audience}</Text>
             </View>
           </View>
@@ -293,6 +318,18 @@ export default function PreviewStep() {
       <View
         className="absolute bottom-0 left-0 right-0 border-t border-hairline bg-paper-50 px-5"
         style={{ paddingBottom: Math.max(insets.bottom, 14), paddingTop: 12 }}>
+        {uploadProgress && uploadProgress.total > 0 && (
+          <View
+            className="mb-2.5 h-1 overflow-hidden rounded-pill"
+            style={{ backgroundColor: '#e7dcc9' }}>
+            <View
+              className="h-1 rounded-pill bg-primary-600"
+              style={{
+                width: `${Math.round((uploadProgress.done / uploadProgress.total) * 100)}%`,
+              }}
+            />
+          </View>
+        )}
         <Pressable
           onPress={() => void publish()}
           disabled={publishing}

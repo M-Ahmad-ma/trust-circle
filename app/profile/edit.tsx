@@ -139,7 +139,7 @@ export default function EditProfileScreen() {
         settingsLabel=""
         topInset={insets.top}
         onBack={() => (router.canGoBack() ? router.back() : router.navigate('/'))}
-        onSettings={() => { }}
+        onSettings={() => {}}
       />
 
       <ScrollView
@@ -151,7 +151,7 @@ export default function EditProfileScreen() {
             onPress={() => void pickAvatar()}
             disabled={uploading}
             accessibilityRole="button"
-            accessibilityLabel={'Change photo'}
+            accessibilityLabel="Change photo"
             accessibilityState={{ disabled: uploading, busy: uploading }}
             className="active:opacity-70">
             <Avatar
@@ -169,7 +169,7 @@ export default function EditProfileScreen() {
 
         <View className="mt-8 gap-6 px-6">
           <AuthField
-            label={'Name'}
+            label="Name"
             value={currentName}
             onChangeText={setName}
             onBlur={() => setTouched(true)}
@@ -181,7 +181,7 @@ export default function EditProfileScreen() {
           />
 
           <AuthField
-            label={'Bio'}
+            label="Bio"
             value={currentBio}
             onChangeText={setBio}
             onBlur={() => setTouched(true)}
@@ -201,7 +201,7 @@ export default function EditProfileScreen() {
 
         <View className="mt-8 px-6">
           <AuthButton
-            label={'Save changes'}
+            label="Save changes"
             onPress={() => void save()}
             busy={busy}
             disabled={!canSave}

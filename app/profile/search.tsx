@@ -119,14 +119,12 @@ export default function PeopleSearchScreen() {
           <Pressable
             onPress={() => router.back()}
             accessibilityRole="button"
-            accessibilityLabel={'Go back'}
+            accessibilityLabel="Go back"
             hitSlop={10}
             className="h-10 w-10 items-center justify-center active:opacity-60">
             <MaterialCommunityIcons name="chevron-left" size={24} color="#342d27" />
           </Pressable>
-          <Text className="font-body-semibold text-3xs uppercase text-ink-400">
-            {'Find people'}
-          </Text>
+          <Text className="font-body-semibold text-3xs uppercase text-ink-400">Find people</Text>
           <View className="h-10 w-10" />
         </View>
 
@@ -141,7 +139,7 @@ export default function PeopleSearchScreen() {
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder={'Search by name'}
+                placeholder="Search by name"
                 placeholderTextColor="#b8a37c"
                 autoCorrect={false}
                 autoFocus={focus === '1'}
@@ -167,10 +165,8 @@ export default function PeopleSearchScreen() {
             <EmptyState
               icon="account-search-outline"
               tone="sand"
-              title={'Find the people you trust'}
-              body={
-                'Search by name. Trust Circle shows only what you are allowed to see, so blocked people and your own account never appear.'
-              }
+              title="Find the people you trust"
+              body="Search by name. Trust Circle shows only what you are allowed to see, so blocked people and your own account never appear."
             />
           )}
 
@@ -179,7 +175,7 @@ export default function PeopleSearchScreen() {
               icon="account-search-outline"
               tone="sand"
               title={`Nobody matches “${query.trim()}”`}
-              body={'Try a different spelling, or fewer letters.'}
+              body="Try a different spelling, or fewer letters."
             />
           )}
 

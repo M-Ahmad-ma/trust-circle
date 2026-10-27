@@ -35,8 +35,8 @@ export default function StoryStep() {
         <View style={{ paddingTop: insets.top + 8 }}>
           <FlowHeader
             current="story"
-            closeLabel={'Discard this experience'}
-            onClose={() => router.dismissAll()}
+            closeLabel="Discard this experience"
+            onClose={() => router.replace('/(tabs)/')}
           />
         </View>
 
@@ -47,7 +47,7 @@ export default function StoryStep() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
           <View className="px-5 pt-9">
             <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-              {'New experience'}
+              New experience
             </Text>
             <Text className="mt-3 font-display text-[30px] leading-[35px] text-ink-900">
               What would you tell a{' '}
@@ -60,15 +60,13 @@ export default function StoryStep() {
               value={draft.reviewText}
               onChangeText={(reviewText) => dispatch({ type: 'setReviewText', reviewText })}
               onBlur={() => setTouched(true)}
-              placeholder={
-                'Start with the thing you would say out loud when someone asks where to eat tonight…'
-              }
+              placeholder="Start with the thing you would say out loud when someone asks where to eat tonight…"
               placeholderTextColor="#b8a37c"
               multiline
               textAlignVertical="top"
               autoCapitalize="sentences"
               maxLength={600}
-              accessibilityLabel={'What would you tell a friend?'}
+              accessibilityLabel="What would you tell a friend?"
               className="min-h-[190px] rounded-card border border-border bg-paper-50 p-4 font-body text-[14px] leading-[22px] text-ink-900"
               style={{ borderColor: touched && tooShort ? '#a03246' : '#e0d2b4' }}
             />
@@ -87,9 +85,8 @@ export default function StoryStep() {
           <View className="mt-6 px-5">
             <View className="rounded-card bg-rose-100 p-4">
               <Text className="font-display-italic text-[13px] leading-[20px] text-primary-700">
-                {
-                  'Write it the way you would say it. Nobody is looking for a review, they are looking for your opinion.'
-                }
+                Write it the way you would say it. Nobody is looking for a review, they are looking
+                for your opinion.
               </Text>
             </View>
           </View>
@@ -112,7 +109,7 @@ export default function StoryStep() {
           <Text
             className="font-body-semibold text-[15px]"
             style={{ color: valid ? '#fdfaf4' : '#f3ecdd' }}>
-            {'Continue'}
+            Continue
           </Text>
         </Pressable>
       </View>

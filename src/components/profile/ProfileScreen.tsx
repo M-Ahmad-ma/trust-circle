@@ -77,14 +77,10 @@ export function ProfileScreen({
     }
   };
 
-
-  console.log(profile, "profile data")
-  console.log("experience", experiences);
-  console.log(placesSeen, "place");
-  console.log(photoKeys, "photoKeys");
-
-
-
+  console.log(profile, 'profile data');
+  console.log('experience', experiences);
+  console.log(placesSeen, 'place');
+  console.log(photoKeys, 'photoKeys');
 
   const confirmSignOut = () => {
     Alert.alert(
@@ -117,7 +113,7 @@ export function ProfileScreen({
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[profile.status === 'ready' && user ? 1 : 0]}
         contentContainerStyle={{ paddingBottom: insets.bottom + 28 }}>
-        {profile.status === 'loading' && <LoadingState label={'Loading your profile…'} />}
+        {profile.status === 'loading' && <LoadingState label="Loading your profile…" />}
 
         {profile.status === 'error' && !user && (
           <ErrorState label={profile.message} onRetry={profile.refetch} />
@@ -169,24 +165,22 @@ export function ProfileScreen({
         {user && tab === 'reviews' && (
           <View>
             <View className="px-6 pb-1 pt-6">
-              <Text className="font-display-semibold text-[19px] text-ink-900">
-                {'Experiences'}
-              </Text>
+              <Text className="font-display-semibold text-[19px] text-ink-900">Experiences</Text>
             </View>
 
-            {experiences.status === 'loading' && <LoadingState label={'Loading your profile…'} />}
+            {experiences.status === 'loading' && <LoadingState label="Loading your profile…" />}
 
             {experiences.status === 'empty' && (
               <EmptyState
                 icon="notebook-outline"
                 tone="sand"
-                title={'No experiences yet'}
-                body={'Visit somewhere, then write it up. It only reaches the people you choose.'}
+                title="No experiences yet"
+                body="Visit somewhere, then write it up. It only reaches the people you choose."
                 {...(isSelf
                   ? {
-                    actionLabel: 'Write your first experience',
-                    onAction: () => router.navigate('/write/place'),
-                  }
+                      actionLabel: 'Write your first experience',
+                      onAction: () => router.navigate('/write/place'),
+                    }
                   : {})}
               />
             )}
@@ -231,8 +225,8 @@ export function ProfileScreen({
               <EmptyState
                 icon="map-marker-off-outline"
                 tone="sand"
-                title={'No places yet'}
-                body={'Places you write about will collect here.'}
+                title="No places yet"
+                body="Places you write about will collect here."
               />
             ) : (
               <ProfilePlacesGrid places={placesSeen} imageKeys={photoKeys} onOpen={onOpenPlace} />
@@ -246,8 +240,8 @@ export function ProfileScreen({
               <EmptyState
                 icon="image-off-outline"
                 tone="sand"
-                title={'No photos yet'}
-                body={'Photos you attach to an experience show up here.'}
+                title="No photos yet"
+                body="Photos you attach to an experience show up here."
               />
             ) : (
               <ProfilePhotosGrid urls={photoKeys} />
@@ -263,7 +257,7 @@ export function ProfileScreen({
             onPress={confirmSignOut}
             disabled={signingOut}
             accessibilityRole="button"
-            accessibilityLabel={'Sign out'}
+            accessibilityLabel="Sign out"
             accessibilityState={{ disabled: signingOut }}
             className="mx-6 mt-10 items-center rounded-xl  border border-danger-500 px-6 py-3 active:opacity-70"
             style={{ opacity: signingOut ? 0.5 : 1 }}>

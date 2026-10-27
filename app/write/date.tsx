@@ -15,8 +15,8 @@ export default function DateStep() {
       <View style={{ paddingTop: insets.top + 8 }}>
         <FlowHeader
           current="date"
-          closeLabel={'Discard this experience'}
-          onClose={() => router.dismissAll()}
+          closeLabel="Discard this experience"
+          onClose={() => router.replace('/(tabs)/')}
         />
       </View>
 
@@ -26,15 +26,14 @@ export default function DateStep() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
         <View className="px-5 pt-9">
           <Text className="font-body-semibold text-2xs uppercase text-primary-600">
-            {'New experience'}
+            New experience
           </Text>
           <Text className="mt-3 font-display text-[30px] leading-[35px] text-ink-900">
             When did you <Text className="font-display-italic text-primary-600">go</Text>?
           </Text>
           <Text className="mt-3 max-w-[310px] font-body text-[13px] leading-[19px] text-ink-500">
-            {
-              'How recent a visit was changes how much someone trusts it. Future dates are not available.'
-            }
+            How recent a visit was changes how much someone trusts it. Future dates are not
+            available.
           </Text>
         </View>
 
@@ -52,7 +51,7 @@ export default function DateStep() {
             <View className="flex-row items-center gap-2 rounded-card bg-surface px-4 py-3">
               <View className="h-1.5 w-1.5 rounded-pill bg-primary-600" />
               <Text className="font-body text-[12px] text-ink-700">
-                {'Visited'} {formatVisitDate(draft.visitedAt)}
+                Visited {formatVisitDate(draft.visitedAt)}
               </Text>
             </View>
           </View>
@@ -72,7 +71,7 @@ export default function DateStep() {
           <Text
             className="font-body-semibold text-[15px]"
             style={{ color: draft.visitedAt ? '#fdfaf4' : '#f3ecdd' }}>
-            {'Continue'}
+            Continue
           </Text>
         </Pressable>
       </View>

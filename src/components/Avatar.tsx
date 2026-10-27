@@ -83,5 +83,4 @@ export function Avatar({ user, size = 32, ringColor, ringWidth = 0, tintOverride
       />
     );
   }
-
 }

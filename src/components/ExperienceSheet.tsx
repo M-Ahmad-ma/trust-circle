@@ -112,16 +112,14 @@ export function ExperienceSheet({
           onPress={onOpenPlace}
           accessibilityRole="button"
           className="h-11 flex-1 items-center justify-center rounded-card border border-primary-600 active:bg-rose-100">
-          <Text className="font-body-semibold text-[13.5px] text-primary-600">{'View place'}</Text>
+          <Text className="font-body-semibold text-[13.5px] text-primary-600">View place</Text>
         </Pressable>
 
         <Pressable
           onPress={onOpenExperience}
           accessibilityRole="button"
           className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-card bg-primary-600 active:bg-primary-700">
-          <Text className="font-body-semibold text-[13.5px] text-primary-fg">
-            {'Open experience'}
-          </Text>
+          <Text className="font-body-semibold text-[13.5px] text-primary-fg">Open experience</Text>
           <MaterialCommunityIcons name="arrow-right" size={14} color="#fdfaf4" />
         </Pressable>
       </View>
@@ -143,7 +141,7 @@ function ScrollableThumbs({
           key={photo.id}
           onPress={onPress}
           accessibilityRole="imagebutton"
-          accessibilityLabel={'Open experience'}
+          accessibilityLabel="Open experience"
           className="overflow-hidden rounded-[8px] bg-surface active:opacity-70">
           <Image
             source={{ uri: photo.uri }}

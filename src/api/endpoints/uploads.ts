@@ -55,7 +55,11 @@ export async function uploadPhoto(
   if (options.placeId) form.append('placeId', options.placeId);
 
   log.upload.info('uploading photo', { name: file.name, type: file.type });
-  const result = await unwrap<UploadResult>(await api('/api/uploads', { method: 'POST', form }));
+  // Photos are up to 5 MB and several may be in flight at once, so the shared
+  // 15 s JSON timeout would cancel transfers that are still making progress.
+  const result = await unwrap<UploadResult>(
+    await api('/api/uploads', { method: 'POST', form, timeoutMs: 60_000 })
+  );
   log.upload.info('photo uploaded', { id: result.id, url: result.url });
   return result;
 }

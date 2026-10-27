@@ -61,19 +61,29 @@ export interface WirePlace {
   /** Detail + search only, one decimal. */
   avgRating: number | null;
   /**
-   * Cover image, derived server-side from the newest experience at this place that
-   * *the requesting viewer* is allowed to see. Absent on a place with no visible
-   * photo, and not carried on the `place` nested inside an ExperienceCard.
-   * Two viewers can legitimately receive different covers for the same place.
+   * The place's own photo, added by whoever created it. Null when nobody has
+   * attached one — an experience photo is never borrowed as the cover, because
+   * it belongs to that reviewer's memory rather than to the place. Not carried
+   * on the `place` nested inside an ExperienceCard.
    */
   coverPhoto?: string | null;
   /**
    * Detail only. True when the viewer added this place and may therefore
-   * `PATCH` it. A capability rather than a `createdBy` id — the client only
-   * needs to know whether to offer the edit affordance, and who added a place
-   * is nobody else's business.
+   * `PATCH` it — a capability, so the edit affordance never has to infer
+   * ownership from ids.
    */
   canEdit?: boolean;
+  /**
+   * Detail only. The person who added the place, shown as attribution. Absent
+   * when that account was deleted (`created_by` is `ON DELETE SET NULL`).
+   */
+  owner?: { id: string; name: string; avatarPath: string | null } | null;
+}
+
+/** `GET /places/:id/related` — anchored on the place, viewer-filtered. */
+export interface PlaceRelatedContent {
+  places: WirePlace[];
+  experiences: ExperienceCard[];
 }
 
 /** Everything needed to place the pin — present on both Place and card.place. */

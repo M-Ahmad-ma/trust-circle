@@ -83,7 +83,7 @@ export function ProfileAddFriend({
         onPress={() => void send()}
         disabled={busy}
         accessibilityRole="button"
-        accessibilityLabel={`${'Add to Circle'} ${userName}`}
+        accessibilityLabel={`$Add to Circle ${userName}`}
         accessibilityState={{ disabled: busy, busy }}
         className="h-11 items-center justify-center rounded-[12px] border border-primary-600 active:bg-rose-100"
         style={{ opacity: busy ? 0.5 : 1 }}>

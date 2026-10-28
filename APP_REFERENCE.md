@@ -125,7 +125,7 @@ The centre comes from `useUserLocation`; Peshawar is only the fallback until a f
 
 | Screen | Calls | Notes |
 | --- | --- | --- |
-| `(tabs)/circles.tsx` | `GET /api/friends` 🔒<br>`GET /api/friends/requests` 🔒<br>`GET /api/users/suggestions?limit=12` 🔒<br>`POST /api/friends/request/:userId` 🔒<br>`POST /api/friends/:requestId/accept` 🔒<br>`POST /api/friends/:requestId/reject` 🔒 | Three queries run on mount. The suggestions section is **always rendered** — not an empty state — and carries its own search filter |
+| `(tabs)/circles.tsx` | `GET /api/friends` 🔒<br>`GET /api/friends/requests` 🔒<br>`GET /api/users/suggestions?limit=12` 🔒<br>`POST /api/friends/request/:userId` 🔒<br>`POST /api/friends/:requestId/accept` 🔒<br>`POST /api/friends/:requestId/reject` 🔒 | Three queries run on mount and refetch on focus, keeping previous rows visible. This is what removes a just-blocked person from the cached suggestions. The suggestions section carries its own search filter; a footer row links to Blocked people for unblocking |
 | `profile/search.tsx` | `GET /api/users/search?q&limit` 🔒<br>`POST /api/friends/request/:userId` 🔒 | Real server-side name search, single page |
 | `profile/[id].tsx` | `GET /api/users/:id` 🔒<br>`GET /api/users/:id/experiences` 🔒 | via `ProfileScreen` |
 | `profile/me.tsx` | `GET /api/users/me` 🔒 | Resolves to an id, then replaces with `/profile/:id`. Static route so it wins over `[id]` |
@@ -206,7 +206,7 @@ A network failure throws before any status exists, so `isApiError()` is false �
 
 A small hook providing `loading` / `ready` / `empty` / `error` as first-class states so screens never fall back to mock content. Deliberately minimal — no cache, no background refetch, no dedup.
 
-Its identity is `${key}#${reloadToken}`; changing `key` re-runs the fetch, and `refetch()` bumps the token.
+Its identity is `${key}#${reloadToken}`; changing `key` re-runs the fetch, and `refetch()` bumps the token. Pass `keepPreviousData` for same-query refetches (e.g. Circle on focus) so the old rows stay on screen while the new ones load.
 
 ### Error codes
 

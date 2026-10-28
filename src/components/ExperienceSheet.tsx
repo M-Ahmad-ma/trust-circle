@@ -37,6 +37,7 @@ export function ExperienceSheet({
 }: ExperienceSheetProps) {
   const { place, reviewer, relationship } = experience;
 
+  console.log("experience label", experience.relationship.label)
   const distance =
     typeof place.distanceM === 'number'
       ? place.distanceM < 1000

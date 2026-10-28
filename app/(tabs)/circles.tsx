@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { usersApi } from '@/api';
@@ -75,6 +75,10 @@ function SuggestionSection({
         );
       } else if (hasCode(caught, 'BLOCKED') || hasCode(caught, 'YOU_BLOCKED_THEM')) {
         setNotice('You cannot connect with this person.');
+        // The row should not survive a block the server just confirmed. The
+        // refetch is the same one used on focus, so it cannot disagree with the
+        // list the user sees after leaving this screen.
+        onRetry();
       } else if (isApiError(caught)) {
         setNotice(caught.message);
       } else {
@@ -85,7 +89,10 @@ function SuggestionSection({
     }
   };
 
-  const settled = status !== 'loading' && status !== 'error';
+  // A focus refetch keeps the old items while `status` is loading. They are
+  // still the best thing to show — the list corrects itself when the response
+  // lands, without the screen collapsing into a spinner.
+  const settled = status !== 'error' && (status !== 'loading' || items.length > 0);
 
   return (
     <View className="mt-8 px-4">
@@ -95,7 +102,9 @@ function SuggestionSection({
         were both allowed to see.
       </Text>
 
-      {status === 'loading' && <LoadingState label="Looking for shared places…" />}
+      {status === 'loading' && items.length === 0 && (
+        <LoadingState label="Looking for shared places…" />
+      )}
 
       {status === 'error' && <ErrorState label={errorMessage} onRetry={onRetry} />}
 
@@ -197,12 +206,44 @@ export default function CircleScreen() {
     return entries.map((entry: FriendEntry) => entry.user);
   }, []);
 
-  const friends = useApiQuery(fetchFriends, { key: 'friends' });
-  const requests = useApiQuery(usersApi.listFriendRequests, { key: 'friend-requests' });
+  // Keep the previous rows visible while the focus refetch runs; otherwise
+  // returning to the tab blanks the whole Circle into loading states.
+  const friends = useApiQuery(fetchFriends, { key: 'friends', keepPreviousData: true });
+  const requests = useApiQuery(usersApi.listFriendRequests, {
+    key: 'friend-requests',
+    keepPreviousData: true,
+  });
 
   const suggestions = useApiQuery(() => usersApi.fetchSuggestions(12), {
     key: 'friend-suggestions',
+    keepPreviousData: true,
   });
+
+  // Destructured so the focus callback depends on stable functions rather than
+  // on the query objects, which are rebuilt every render.
+  const refetchFriends = friends.refetch;
+  const refetchRequests = requests.refetch;
+  const refetchSuggestions = suggestions.refetch;
+
+  /**
+   * Tabs stay mounted. Blocking happens on a profile pushed from this screen,
+   * so on the way back the cached suggestions still contain the person you just
+   * blocked — and their Add button can only fail. Refetching on focus makes the
+   * server's block exclusion visible; the first focus is skipped because the
+   * queries already fetched on mount.
+   */
+  const hasFocused = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocused.current) {
+        hasFocused.current = true;
+        return;
+      }
+      refetchFriends();
+      refetchRequests();
+      refetchSuggestions();
+    }, [refetchFriends, refetchRequests, refetchSuggestions])
+  );
 
   const needle = query.trim().toLowerCase();
   const people = (friends.data ?? []).filter(
@@ -320,7 +361,7 @@ export default function CircleScreen() {
         />
 
         {/* Incoming requests are real: there is an endpoint and a state machine. */}
-        {requests.status !== 'loading' && (
+        {(requests.data || requests.status !== 'loading') && (
           <View className="mt-8 px-4">
             <Text className="font-body-semibold text-2xs uppercase text-ink-400">Requests</Text>
 
@@ -367,6 +408,25 @@ export default function CircleScreen() {
             )}
           </View>
         )}
+
+        {/* Blocking removes the profile you would otherwise unblock from, so
+            this is the discoverable route to the only screen that can undo it. */}
+        <View className="mt-8 px-4">
+          <Pressable
+            onPress={() => router.push('/settings/blocked')}
+            accessibilityRole="button"
+            accessibilityLabel="Manage blocked people"
+            className="flex-row items-center gap-3 rounded-card border border-hairline bg-paper-50 px-4 py-3.5 active:opacity-70">
+            <MaterialCommunityIcons name="account-cancel-outline" size={18} color="#a03246" />
+            <View className="flex-1">
+              <Text className="font-body-semibold text-[13px] text-ink-900">Blocked people</Text>
+              <Text className="mt-0.5 font-body text-[11px] text-ink-400">
+                Review or undo a block.
+              </Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={17} color="#b8a37c" />
+          </Pressable>
+        </View>
       </ScrollView>
     </Screen>
   );

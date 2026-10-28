@@ -93,9 +93,9 @@ export function RelationshipBadge({
         }}
       />
       <Text
-        className="font-body-semibold"
+        className="font-body-semibold "
         style={{ fontSize: size === 'sm' ? 9 : 10.5, color: style.color }}>
-        {compact ? style.fallbackLabel.split(' ')[0] : text}
+        {compact ? style.fallbackLabel : text}
       </Text>
     </View>
   );

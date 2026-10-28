@@ -76,7 +76,7 @@ export function ProfilePhotosGrid({ urls }: ProfilePhotosProps) {
 
   return (
     <>
-      <View className="flex-row flex-wrap px-6">
+      <View className="flex-row flex-wrap px-1">
         {resolved.map((uri, index) => (
           <Pressable
             // Index, not uri: the same file can legitimately appear twice if two
@@ -139,7 +139,7 @@ function PhotoViewer({
         accessibilityRole="button"
         accessibilityLabel="Close photo"
         className="flex-1 items-center justify-center bg-black/95 px-5">
-        <Pressable onPress={() => {}} className="w-full flex-1 items-center justify-center">
+        <Pressable onPress={() => { }} className="w-full flex-1 items-center justify-center">
           <Image
             source={{ uri }}
             style={{ width: '100%', height: '70%' }}

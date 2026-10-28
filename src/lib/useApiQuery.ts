@@ -21,6 +21,13 @@ type Options<T> = {
   isEmpty?: (data: T) => boolean;
   enabled?: boolean;
   errorMessage?: string;
+  /**
+   * Keep the last successful data visible while a refetch runs. Opt-in, because
+   * a changed key can also mean a different record — showing the previous one
+   * would then be a lie. Use it for same-query refreshes, such as refetching a
+   * tab on focus.
+   */
+  keepPreviousData?: boolean;
 };
 
 /**
@@ -30,7 +37,7 @@ type Options<T> = {
  */
 export function useApiQuery<T>(
   fetcher: () => Promise<T>,
-  { key, isEmpty, enabled = true, errorMessage }: Options<T>
+  { key, isEmpty, enabled = true, errorMessage, keepPreviousData = false }: Options<T>
 ) {
   const [reloadToken, setReloadToken] = useState(0);
   // key identifies the query; the token forces a re-run of the same query.
@@ -117,7 +124,9 @@ export function useApiQuery<T>(
     ? { status: 'empty', data: null }
     : settled.identity === identity
       ? settled.value
-      : { status: 'loading', data: null };
+      : keepPreviousData && settled.value.data !== null
+        ? { status: 'loading', data: settled.value.data }
+        : { status: 'loading', data: null };
 
   return { ...state, refetch };
 }

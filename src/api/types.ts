@@ -54,11 +54,8 @@ export interface WirePlace {
   city: string | null;
   lat: number;
   lng: number;
-  /** Present only when the request carried lat/lng. */
   distanceM?: number;
-  /** Detail + search only, viewer-aware. */
   experienceCount?: number;
-  /** Detail + search only, one decimal. */
   avgRating: number | null;
   /**
    * The place's own photo, added by whoever created it. Null when nobody has
@@ -126,6 +123,15 @@ export interface UserSuggestion {
   relationship: Relationship;
   sharedPlaceCount: number;
   sharedPlaces: string[];
+}
+
+/**
+ * `GET /users/directory` — every person visible to the viewer, with the
+ * relationship to them. Unlike suggestions, this is not ranked by shared places.
+ */
+export interface DirectoryEntry {
+  user: SlimUser;
+  relationship: Relationship;
 }
 
 /** A friend request as it arrives from GET /friends/requests. */

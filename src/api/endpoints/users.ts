@@ -1,6 +1,7 @@
 import { api, unwrap, unwrapWithMeta } from '../client';
 import type {
   AuthUser,
+  DirectoryEntry,
   ExperienceCard,
   FriendEntry,
   FriendRequest,
@@ -77,6 +78,22 @@ export async function listUserExperiences(
   const suffix = query.toString() ? `?${query}` : '';
   const { data } = await unwrapWithMeta<ExperienceCard[]>(
     await api(`/api/users/${id}/experiences${suffix}`)
+  );
+  return data;
+}
+
+/**
+ * Everyone the viewer may see — not a shared-place recommendation. Used by the
+ * Friends screen's full people list; the Circle suggestions keep using
+ * `fetchSuggestions`.
+ */
+export async function listDirectory(limit = 100, offset = 0): Promise<DirectoryEntry[]> {
+  const query = new URLSearchParams({
+    limit: String(Math.min(limit, 100)),
+    offset: String(offset),
+  });
+  const { data } = await unwrapWithMeta<DirectoryEntry[]>(
+    await api(`/api/users/directory?${query}`)
   );
   return data;
 }

@@ -447,6 +447,28 @@ empty state that still offers name search; do not treat it as a failure.
 
 Errors: `401 UNAUTHORIZED` · `400 VALIDATION_ERROR`.
 
+#### `GET /api/users/directory?limit=100&offset=0` → `200`
+
+Every user the viewer may see, regardless of whether they share a place. This is the
+Friends screen's "All people" list; it is deliberately **not** a recommendation feed.
+
+```json
+{ "data": [ {
+  "user": { "id": "8b054d6f-…", "name": "Bilal Ahmed", "avatarPath": null, "bio": "Museums over malls." },
+  "relationship": { "type": "none", "label": "Community" }
+} ], "meta": { "total": 12, "limit": 100, "offset": 0 } }
+```
+
+| Query | Rules |
+|---|---|
+| `limit` | 1–100, default **100** |
+| `offset` | ≥0, default 0 |
+
+Excludes yourself and blocked pairs (either direction). Relationship is computed per
+viewer (`direct_friend`, `friend_of_friend`, `none`), so an extended-circle person can be
+labelled without inferring it. Use `/suggestions` when the point is shared-place
+relevance, as the Circle screen does.
+
 #### `GET /api/users/:id` → `200`
 
 ```json

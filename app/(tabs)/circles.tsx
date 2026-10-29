@@ -12,19 +12,9 @@ import { CircleHeader } from '@/components/circle/CircleHeader';
 import { CircleSearch } from '@/components/circle/CircleSearch';
 import { PeopleRail } from '@/components/circle/PeopleRail';
 import { Screen } from '@/components/Screen';
+import { sharedPlaceReason } from '@/lib/suggestions';
 import { useApiQuery } from '@/lib/useApiQuery';
 import type { QueryState } from '@/lib/useApiQuery';
-
-function sharedPlaceReason(suggestion: UserSuggestion): string {
-  const { sharedPlaces, sharedPlaceCount } = suggestion;
-  if (sharedPlaces.length === 0) return '';
-  if (sharedPlaceCount > sharedPlaces.length) {
-    return `Also at ${sharedPlaces.join(', ')} +${sharedPlaceCount - sharedPlaces.length} more`;
-  }
-  return sharedPlaces.length === 1
-    ? `Also at ${sharedPlaces[0]}`
-    : `Also at ${sharedPlaces.join(', ')}`;
-}
 
 type SuggestionSectionProps = {
   status: QueryState<UserSuggestion[]>['status'];
@@ -277,8 +267,8 @@ export default function CircleScreen() {
           eyebrow="Requests"
           title="Circle"
           subtitle="People whose judgement you actually rely on."
-          inviteLabel="Invite someone"
-          onInvite={() => router.push('/profile/search')}
+          actionLabel="Friends"
+          onAction={() => router.push('/friends')}
         />
 
         <View className="mx-4 mt-5 h-px bg-border" />
@@ -303,8 +293,8 @@ export default function CircleScreen() {
               people={people}
               total={friends.data.length}
               inCircleLabel="in your Circle"
-              seeAllLabel="See all"
-              onSeeAll={() => setQuery('')}
+              seeAllLabel="Manage"
+              onSeeAll={() => router.push('/friends')}
               onOpenPerson={(id) => router.push(`/profile/${id}`)}
             />
 

@@ -72,6 +72,7 @@ export default function ExploreScreen() {
     isEmpty: noIsEmpty,
   });
 
+
   const experiences = useApiQuery<ExperienceCard[]>(fetchExperiences, {
     key: `experiences:${geoKey(center.lat, center.lng)}`,
     errorMessage: 'We could not load experiences nearby.',
@@ -100,9 +101,7 @@ export default function ExploreScreen() {
     setRecenterToken((token) => token + 1);
   };
 
-  console.log('me', me);
-  console.log('places', places);
-  
+
 
   return (
     <Screen className="bg-paper-100" edges={['top']}>
@@ -245,6 +244,7 @@ export default function ExploreScreen() {
   );
 }
 
+// TODO: this component has a type WirePlace which contains the owner info type the issue is that backend does not include the owner info
 function PlaceSummary({
   place,
   onOpen,
@@ -260,6 +260,8 @@ function PlaceSummary({
         ? `${Math.round(place.distanceM)} m away`
         : `${(place.distanceM / 1000).toFixed(1)} km away`
       : null;
+
+  console.log("place summary", place)
 
   return (
     <View className="bg-paper-100 px-4 pb-5 pt-3">

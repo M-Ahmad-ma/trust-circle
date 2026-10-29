@@ -62,6 +62,7 @@ my-expo-app/
 │  │  ├─ index.tsx          # Explore — map/list of nearby places
 │  │  ├─ circles.tsx        # Friends, suggestions, requests
 │  │  └─ profile.tsx        # Your own profile, inline
+│  ├─ friends.tsx           # Friends hub — requests, suggestions, your friends
 │  ├─ place/[id].tsx        # Place detail
 │  ├─ experience/[id].tsx   # Experience detail
 │  ├─ profile/
@@ -125,7 +126,8 @@ The centre comes from `useUserLocation`; Peshawar is only the fallback until a f
 
 | Screen | Calls | Notes |
 | --- | --- | --- |
-| `(tabs)/circles.tsx` | `GET /api/friends` 🔒<br>`GET /api/friends/requests` 🔒<br>`GET /api/users/suggestions?limit=12` 🔒<br>`POST /api/friends/request/:userId` 🔒<br>`POST /api/friends/:requestId/accept` 🔒<br>`POST /api/friends/:requestId/reject` 🔒 | Three queries run on mount and refetch on focus, keeping previous rows visible. This is what removes a just-blocked person from the cached suggestions. The suggestions section carries its own search filter; a footer row links to Blocked people for unblocking |
+| `(tabs)/circles.tsx` | `GET /api/friends` 🔒<br>`GET /api/friends/requests` 🔒<br>`GET /api/users/suggestions?limit=12` 🔒<br>`POST /api/friends/request/:userId` 🔒<br>`POST /api/friends/:requestId/accept` 🔒<br>`POST /api/friends/:requestId/reject` 🔒 | Three queries run on mount and refetch on focus, keeping previous rows visible. This is what removes a just-blocked person from the cached suggestions. The header Friends pill and the friends rail's Manage link open `/friends`; the suggestions section carries its own search filter; a footer row links to Blocked people for unblocking |
+| `friends.tsx` | `GET /api/friends` 🔒<br>`GET /api/friends/requests` 🔒<br>`GET /api/users/directory?limit=100` 🔒<br>`POST /api/friends/request/:userId` 🔒<br>`POST /api/friends/:requestId/accept` 🔒<br>`POST /api/friends/:requestId/reject` 🔒<br>`DELETE /api/friends/:userId` 🔒 | Friends hub: incoming requests with Accept/Decline, **all users** in the directory with Add / Requested, and the accepted friends list with Remove (confirmed). The Circle suggestions keep the shared-place ranking. Refetches on focus; previous rows stay visible during the refresh |
 | `profile/search.tsx` | `GET /api/users/search?q&limit` 🔒<br>`POST /api/friends/request/:userId` 🔒 | Real server-side name search, single page |
 | `profile/[id].tsx` | `GET /api/users/:id` 🔒<br>`GET /api/users/:id/experiences` 🔒 | via `ProfileScreen` |
 | `profile/me.tsx` | `GET /api/users/me` 🔒 | Resolves to an id, then replaces with `/profile/:id`. Static route so it wins over `[id]` |

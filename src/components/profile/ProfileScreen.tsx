@@ -143,6 +143,7 @@ export function ProfileScreen({
             editLabel="Edit Profile"
             onEdit={onEditProfile ?? (() => router.push('/profile/edit'))}
             onBecameFriend={profile.refetch}
+            onOpenFriends={isSelf ? () => router.push('/friends') : undefined}
             // A blocked profile 404s, so refetching would replace a real screen
             // with the "Profile unavailable" empty state and read like a failure.
             // Leaving is the truthful outcome.

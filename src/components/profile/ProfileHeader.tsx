@@ -21,6 +21,8 @@ type ProfileHeaderProps = {
   editLabel: string;
   onEdit: () => void;
   onBecameFriend?: () => void;
+  /** Self only — opens the full friends hub from the Circle count. */
+  onOpenFriends?: () => void;
   /** Called after a successful block — the profile is about to become a 404. */
   onBlocked?: () => void;
 };
@@ -36,6 +38,7 @@ export function ProfileHeader({
   editLabel,
   onEdit,
   onBecameFriend,
+  onOpenFriends,
   onBlocked,
 }: ProfileHeaderProps) {
   return (
@@ -67,7 +70,7 @@ export function ProfileHeader({
 
       <View className="flex-row px-7 py-5">
         <Stat label="Experiences" value={stats.experiences} showDivider={false} />
-        <Stat label="Circle" value={stats.friends} showDivider />
+        <Stat label="Circle" value={stats.friends} showDivider onPress={onOpenFriends} />
       </View>
 
       {isSelf ? (
@@ -108,17 +111,36 @@ function Stat({
   label,
   value,
   showDivider,
+  onPress,
 }: {
   label: string;
   value: number;
   showDivider: boolean;
+  onPress?: () => void;
 }) {
+  const body = (
+    <View className="items-center">
+      <Text className="font-body text-[11px] text-ink-400">{label}</Text>
+      <View className="mt-1 flex-row items-center gap-0.5">
+        <Text className="font-body-bold text-[20px] text-ink-900">{value}</Text>
+        {onPress && <MaterialCommunityIcons name="chevron-right" size={13} color="#b8a37c" />}
+      </View>
+    </View>
+  );
+
   return (
     <View className="flex-1 flex-row items-center justify-center">
-      <View className="items-center">
-        <Text className="font-body text-[11px] text-ink-400">{label}</Text>
-        <Text className="mt-1 font-body-bold text-[20px] text-ink-900">{value}</Text>
-      </View>
+      {onPress ? (
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${label.toLowerCase()}`}
+          className="items-center rounded-card px-2 py-1 active:opacity-60">
+          {body}
+        </Pressable>
+      ) : (
+        body
+      )}
       {showDivider && <View className="absolute left-0 h-[52px] w-px bg-hairline" />}
     </View>
   );

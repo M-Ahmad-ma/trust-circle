@@ -113,6 +113,10 @@ export default function RootLayout() {
         />
         <Stack.Screen name="profile/search" options={{ headerShown: false }} />
         <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="friends"
+          options={{ headerShown: false, animation: 'slide_from_right' }}
+        />
         {/* Both settings screens draw their own back button and title. */}
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="settings/blocked" options={{ headerShown: false }} />
